@@ -3,7 +3,9 @@
 #'
 #' @export
 readDaneSurowe <- function(file) {
-  dt<-readDataSheet(file)
+  ans<-readDataSheet(file)
+  dt<-ans$dt
+  na.colnames<-ans$na.colnames
   readLabelSheet(file,dt, ncol(dt)*2+2)
   readMeasureAndUnits(file,dt)
   readVariableGroups(file, df)
@@ -21,7 +23,12 @@ readDaneSurowe <- function(file) {
   paths<-c(getOption('globalPathPrefix'),customerfolder, subcustomerfolder)
 
   setattr(dt,'paths',paths)
-  dt[,1:=NULL,with=FALSE]
+  #  browser()
+  for(i in rev(na.colnames))
+  {
+    dt[,(i):=NULL]
+  }
+  return(dt)
 }
 
 
@@ -90,7 +97,7 @@ readSheet<-function(path, sheet, skip = 0, colcnt=NA)
 
   rng<-as.data.table(readxl::read_excel(path=path, sheet=sheet, col_names = FALSE, skip = skip))
 
-  new.colids<-paste0('X',seq(0,colcnt))
+  new.colids<-paste0('X',seq(0,colcnt-1))
   new.colids.idx<-new.colids[! (new.colids %in% colnames(rng))]
   delete.colids.idx<-colnames(rng)[!(colnames(rng) %in% new.colids )]
 
@@ -114,9 +121,11 @@ readDataSheet<-function(file)
   address<-danesurowe::getNamedRange(file, rngName)
   rng<-readxl::read_excel(path=address$file, sheet=address$sheetname, col_names = FALSE)
   rowcnt <- nrow(rng)-2
-  colcnt <- ncol(rng) - which.min(rev(is.na(rng[2,1:ncol(rng)])))
+  colcnt <- 1 + ncol(rng) - which.min(rev(is.na(rng[2,1:ncol(rng)])))
 
   my.colnames<-as.character(rng[2,1:colcnt])
+  na.colnames<-which(is.na(rng[2,1:colcnt]))
+
   collabels<-as.character(rng[1,1:colcnt])
 
   rng<-readSheet(path=address$file, sheet=address$sheetname, skip=2, colcnt=colcnt)
@@ -125,7 +134,6 @@ readDataSheet<-function(file)
 
   my.rownames<-rng[[1]]
   rng<-rng[!is.na(my.rownames),]
-  rng[,(1):=NULL] #Remove the first 'lp' column
   my.rownames<-my.rownames[!is.na(my.rownames)]
 
   flagIgnoreRownames=FALSE
@@ -150,10 +158,18 @@ readDataSheet<-function(file)
   for(i in 1:colcnt)
   {
 #    cat(paste0("i=",i,'\n'))
-    setattr(rng[[i]],'label',collabels[[i]])
+    if (!is.na(collabels[[i]]))
+    {
+      setattr(rng[[i]],'label',collabels[[i]])
+    }
   }
 
-  return(rng)
+  rng[,(1):=NULL] #Remove the first 'lp' column
+  if (length(na.colnames)>0)
+  {
+    na.colnames<-na.colnames-1 #Because we deleted the first column with rownames
+  }
+  return(list(dt=rng, na.colnames=na.colnames))
 }
 
 readLabelSheet<-function(file, dt, colcnt)
@@ -180,10 +196,10 @@ readLabelSheet<-function(file, dt, colcnt)
 
     if (!all(is.na(rngLevels)))
     {
-      if (varnr==178)
-      {
-                browser()
-      }
+#      if (varnr==178)
+#      {
+#                browser()
+#      }
       maxNA<-match(TRUE, is.na(rngLevels))
       if (is.na(maxNA))
       {

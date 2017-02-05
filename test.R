@@ -1,4 +1,6 @@
 file<-'/home/Adama-docs/Adam/MyDocs/Statystyka/Maszyny/Dab2/ThinVB/RDep/dane surowe2c.xlsm'
+#debugonce(readDaneSurowe)
+dt<-danesurowe::readDaneSurowe('/home/Adama-docs/Adam/MyDocs/Statystyka/Maszyny/Dab2/R/danesurowe/tests/testthat/dane surowe2c.xlsm')
 #namedRange<-'CustomerFolder'
 namedRange<-'SubcustomerFolder'
 namedRange<-'DBLongName'
