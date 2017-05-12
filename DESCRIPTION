@@ -1,9 +1,9 @@
 Package: danesurowe
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Reads database from Excel format "dane surowe"
 Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
+Author: Adam Ryczkowski
+Maintainer: <adam@statystyka.net>
 Description: More about what it does (maybe more than one line)
     Use four spaces when indenting paragraphs within the Description.
 License: What license is it under?
@@ -14,7 +14,10 @@ Imports:
 	  plyr,
 	  digest,
 	  dplyr,
-	  stringi
+	  stringi,
+	  stringr,
+	  labelled,
+	  haven
 Suggests:
     testthat
 Depends:

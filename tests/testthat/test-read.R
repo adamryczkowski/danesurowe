@@ -3,7 +3,7 @@ setwd('/home/Adama-docs/Adam/MyDocs/Statystyka/Maszyny/Dab2/R/danesurowe/tests/t
 context("Test reads")
 
 baseline<-readRDS('baseline.rds')
-ourversion<-danesurowe::readDaneSurowe('dane surowe2c.xlsm')
+ourversion<-danesurowe::readDaneSurowe3('dane surowe2c.xlsm')
 ALSdatabase::do_compare(dfcontrol,ourversion)
 test_that("Number of cases", expect_equal(nrow(baseline), nrow(ourversion)))
 

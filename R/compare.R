@@ -15,7 +15,7 @@ comparedf<-function(df1, df2)
   if (nrow(df1) != nrow(df2))
   {
     ans<-list(message=paste0('Data frames have different number of cases: ', nrow(df1), ' vs ', nrow(df2)), result=FALSE)
-    retrurn(ans)
+    rownams(df1)
   }
 
   names1<-colnames(df1)
@@ -89,7 +89,7 @@ comparedf<-function(df1, df2)
   npos<-plyr::aaply(commonvars, 1, function(h) sum(h==varHashes1))
   pos<-plyr::aaply(commonvars, 1, function(h) data.table::first(which(h==varHashes1)))
   names(commonvars)<-commonnames[pos]
-  
+
   if (length(commonvars)!=length(commonnames))
   {
     dif1 <- sort(setdiff(varHashes1, varHashes2))
