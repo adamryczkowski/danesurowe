@@ -61,7 +61,7 @@ readSheet<-function(path, sheet, skip = 0, colcnt=NA)
     colcnt <- ncol(rng) - which.min(rev(is.na(rng[2,1:ncol(rng)])))
   }
 
-  rng<-data.table::as.data.table(readxl::read_excel(path=path, sheet=sheet, col_names = FALSE, skip = skip))
+  rng<-data.table::as.data.table(suppressWarnings(readxl::read_excel(path=path, sheet=sheet, col_names = FALSE, skip = skip)))
 
   new.colids<-paste0('X__',seq(0,colcnt-1))
   new.colids.idx<-new.colids[! (new.colids %in% colnames(rng))]
@@ -71,7 +71,6 @@ readSheet<-function(path, sheet, skip = 0, colcnt=NA)
   {
     rng[,(i):=NULL]
   }
-
   for (i in new.colids.idx)
   {
     rng[,(i):=NA]

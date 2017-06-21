@@ -41,7 +41,7 @@ readLabelSheet3<-function(file, dt, colcnt)
       rngLabels<-rng[[(varnr)*2+2]]
 #      cat(paste(varnr,'\n'))
 
-      if (identical(sort(as.integer(rngLevels)),seq_along(rngLevels)))
+      if (identical(sort(suppressWarnings(as.integer(rngLevels))),seq_along(rngLevels)))
       {
         #Standard factor
         ord<-order(as.integer(rngLevels))

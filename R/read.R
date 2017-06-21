@@ -72,7 +72,6 @@ readDaneSurowe4 <- function(file, flag_keep_tagged_na = FALSE) {
   errors<-ans$errors
   mywarnings<-ans$warnings
 
-  #Ustaw min i max teoretyczny i zwracaj load error, gdy zauważymy przypadki, które ich nie spełniają
   ans<-readMinMax(file, ncol(dt))
   errors<-join_messages(errors, ans$errors, dt)
 
@@ -80,33 +79,32 @@ readDaneSurowe4 <- function(file, flag_keep_tagged_na = FALSE) {
   errors<-join_messages(errors, ans$errors, dt)
   dt<-ans$dt
 
-  #TODO: Gdy zmienna jest dyskretna zwracaj load error, gdy wartość jest niecałkowita
   forceIntegers<-readForceInteger(file, ncol(dt))
   ans<-set_ForcedIntegers(dt, forceIntegers)
   errors<-join_messages(errors, ans$errors, dt)
   dt<-ans$dt
 
-  #TODO: Zwracaj load error, gdy typ się nie zgadza z oczekiwanym
   errors<-join_messages(errors, ValidateTypes(dt), dt)
 
-  #TODO: Zwracaj error dla zmiennych required z brakami
   required<-readRequired(file, ncol(dt))
   ans<-set_Required(dt, required)
   errors<-join_messages(errors, ans$errors, dt)
 
-  #TODO: Zwracaj error dla zmiennych słownikowych, dla których są wartości spoza słownika i ma ich nie być
  # browser()
   ints<-readLimitedToLabels(file, ncol(ans$dt))
   ans<-set_LimitToLabels(dt, ints)
   errors<-join_messages(errors, ans$errors, dt)
 
 
+  xlsformulas<-readXLSFormulas(file, ncol(ans$dt))
+  rformulas<-readRFormulas(file, ncol(ans$dt))
+  ans<-set_Formulas(dt, xlsformulas=xlsformulas, rformulas=rformulas)
+  errors<-join_messages(errors, ans$errors, dt)
 
-  #TODO: Zwracaj error dla zmiennych, dla których nie udała się walidacja
   errors<-join_messages(errors, ValidateCustom(dt), dt)
 
 #  browser()
-
+a
   vars_to_keep <- which(types == '0')
   for(varnr in rev(vars_to_keep))
   {
@@ -125,3 +123,268 @@ readDaneSurowe4 <- function(file, flag_keep_tagged_na = FALSE) {
 }
 
 
+#Applies labels together with measures to the data.table dt. It modifies the data.table in place.
+set_apply_labels<-function(dt, labels, vartypes, flagUseTaggedNA=TRUE, in_varnames=NULL, flag_keep_tagged_na=FALSE)
+{
+  #  browser()
+  if (is.null(in_varnames))
+  {
+    varnames=colnames(dt)
+  } else
+  {
+    varnames=in_varnames
+  }
+
+  suggestedTaggedMissings <- character(0)
+  errors<-new.env()
+  mywarnings<-new.env()
+
+  fn_baseclass<-function(varnr)
+  {
+    #    if (varnr==132) browser();
+    #    if (colnames(dt)[[varnr]]=='q_88e') browser()
+    #    cat(paste(varnr,'\n'))
+    #First we find missings and convert them into proper tagged NA
+    myALLlevels<-labels[[as.character(varnr)]]$levels
+    myALLlabels<-labels[[as.character(varnr)]]$labels
+    charLevels<-is.na(suppressWarnings(as.numeric(myALLlevels)))
+    myNAlevels<-myALLlevels[charLevels]
+    myNAlabels<-myALLlabels[charLevels]
+
+    info<-assign_nas(myNAlabels, suggestedTaggedMissings=suggestedTaggedMissings)
+    suggestedTaggedMissings<<-info$suggestedTaggedMissings
+    myNAtags<-info$NAtags
+    myNAlabels<-myNAlabels[!is.na(myNAtags)]
+    myNAlevels<-myNAlevels[!is.na(myNAtags)]
+    myNAtags<-myNAtags[!is.na(myNAtags)]
+
+    mylevels<-as.numeric(myALLlevels[!charLevels])
+    mylabels<-myALLlabels[!charLevels]
+
+    origvar <- dt[[varnr]]
+    var <- origvar #copy
+
+    if (length(myNAlevels)>0){
+      var[var %in% myNAlevels] <- NA
+    }
+
+    # Now we have properly replaced all missings with adequate tagged missings.
+    # Now we should decide what base class the variable should have. Choices are:
+    # date			 if we are forced to do this via the 'class' parameter. If we fail to do that continue:
+    if (vartypes[[varnr]]=='D')
+    {
+      varDate<-tryCatch(
+        as.Date(origvar,origin="1899-12-30") #We assume Excel for Windows format
+        , error=function(e){return(NULL)})
+      if (!is.null(varDate))
+      {
+        return(list(var=varDate, NAlabels=myNAlabels, NAlevels=myNAlevels, levels=mylevels, labels=mylabels ))
+      }
+    }
+
+    # Now we check, whether the variable is a valid number
+
+    numvar<-tryCatch(
+      as.numeric(var),
+      warning=function(w){NULL}
+    )
+
+    # character  if there is at least one character
+    if (length(numvar)==0)
+    {
+      if (vartypes[[varnr]]=='D')
+      {
+        add_msg(varname = colnames(dt)[[varnr]], message =
+                  paste0("Cannot convert variable ",
+                         nice_varname(dt, varnr),
+                         " to Date."),
+                msg_list = errors )
+        return(list(var=var, NAlabels=myNAlabels, NAlevels=myNAlevels, levels=mylevels, labels=mylabels ))
+      }
+
+      #Variable is a character string
+      if (length(myNAlabels)>0)
+      {
+        if(flag_keep_tagged_na)
+        {
+          msg<-paste0("Warning: Character vector variable \"", varnames[[varnr]], "\" doesn't support tagged NA. Keeping all tagged NA as non-missing text labels. ")
+          add_msg(colnames(dt)[[varnr]], msg, mywarnings)
+          var <- origvar
+        } else {
+          msg<-paste0("Warning: Character vector variable \"", varnames[[varnr]], "\" doesn't support tagged NA. Removing all tagged NA into plain NA. Consider replacing the vector into numeric")
+          add_msg(colnames(dt)[[varnr]], msg, mywarnings)
+          warning(msg)
+        }
+      }
+      return(list(var=var, NAlabels=character(0), NAlevels=character(0), levels=mylevels, labels=mylabels ))
+    }
+
+    if (vartypes[[varnr]]=='D')
+    {
+      if (length(myNAlabels)>0)
+      {
+        msg<-paste0('Warning: Date variable ',
+                    nice_varname(dt, varnr),
+                    " doesn't support tagged NA. Removing all tagged NA into plain NA.")
+        add_msg(varname = colnames(dt)[[varnr]],
+                message = msg,
+                msg_list = mywarnings)
+        warning(msg)
+      }
+      varDate<-tryCatch(
+        as.Date(numvar,origin="1899-12-30") #We assume Excel for Windows format
+        , error=function(e){
+          add_msg(varname = colnames(dt)[[varnr]],
+                  message = paste0("Cannot convert the ",
+                                   nice_varname(dt, varnr),
+                                   " variable to date"),
+                  msg_list = errors );
+          return(NULL)
+        }
+      )
+      if (!is.null(varDate))
+      {
+        return(list(var=NA, NAlabels=myNAlabels, NAlevels=myNAlevels, levels=mylevels, labels=mylabels ))
+        #        return(list(var=varDate, NAlabels=myNAlabels, NAlevels=myNAtags, levels=mylevels, labels=mylabels ))
+      }
+    }
+
+    #We can put all NAs in place
+    if (flagUseTaggedNA)
+    {
+      for (i in seq_along(myNAlevels))
+      {
+        n=myNAlevels[[i]]
+        t=myNAtags[[i]]
+        numvar[origvar==n] <- haven::tagged_na(t)
+      }
+    }
+
+    #Now we know, we have a proper numeric number.
+    if ((length(myNAlevels)>0) && vartypes[[varnr]] %in% c('I','F') && flagUseTaggedNA){
+      msg<-paste0('Integer variable ',
+                  nice_varname(dt, varnr),
+                  ' don\'t support tagged NAs. Promoting integer into the numeric. ')
+      warning(msg)
+      add_msg(varname = colnames(dt)[[varnr]],
+              message = msg,
+              msg_list = mywarnings)
+      forceNumeric=TRUE
+    } else {
+      forceNumeric=FALSE
+    }
+
+    #Now we need to decide whether to keep the numeric
+
+    if (((length(myNAlevels)==0) || flagUseTaggedNA) && !forceNumeric && vartypes[[varnr]] %in% c('I','F'))
+    {
+      numvar <- as.integer(numvar)
+      return(list(var=numvar, NAlabels=list(), NAlevels=list(), levels=mylevels, labels=mylabels ))
+
+    }
+    if (length(levels)==0 && length(NAlevels)>0)
+    {
+      add_msg(varname = colnames(dt)[[varnr]],
+              message = paste0("Numerical type doesn't support named missings. Discarding the names for the missings (but leaving the attributes and tagged na)"),
+              msg_list = errors );
+    }
+
+    return(list(var=numvar, NAlabels=myNAlabels, NAlevels=myNAtags, levels=mylevels, labels=mylabels ))
+  }
+
+  fn_labelled<-function(var, NAlabels, NAlevels, labels, levels)
+  {
+
+    if (length(NAlabels)>0)
+    {
+      if (length(levels)>0)
+      {
+        varret <- labelled::labelled(var, c(setNames(levels, labels), setNames(haven::tagged_na(NAlevels),NAlabels)))
+      } else {
+        #        browser()
+        setattr(var, "labels", setNames(haven::tagged_na(NAlevels),NAlabels))
+        varret <- var
+      }
+      return(varret)
+    }
+
+    if (length(labels)>0)
+    {
+      if (is.integer(var))
+      {
+        if (all(sort(unique(var)) %in% levels))
+        {
+          return(factor(var, levels=levels, labels=labels))
+        }
+      }
+      varret <- labelled::labelled(var, setNames(levels, labels))
+      return(varret)
+    }
+    return(var)
+  }
+
+  fn<-function(varnr)
+  {
+    #  if (varnr==7) browser();
+
+    #    cat(paste0(varnr,'\n'))
+
+    info<-fn_baseclass(varnr)
+    var<-do.call(fn_labelled, info)
+    #browser()
+    if (!is.null(in_varnames))
+    {
+      if (varnr==1)
+      {
+        if (varnames[[varnr]]=='var1')
+        {
+          setnames(dt,'var2')
+          n <- 'var2'
+        } else { n <- 'var1'}
+      }
+      if (varnames[[varnr]] %in% names(dt))
+      {
+        newname <- make.un-ique(c(names(dt), varnames[[varnr]]))[[length(dt)+1]]
+        add_msg(varname = colnames(dt)[[varnr]],
+                message = paste0('Duplicate variable name detected "',
+                                 varnames[[varnr]],
+                                 '" for variable nr ',
+                                 varnr,
+                                 ". Renaming it into '",
+                                 newname,
+                                 "'"),
+                msg_list = errors )
+
+      } else {
+        newname <- varnames[[varnr]]
+      }
+      dt[, (newname):=var]
+      if (varnr==1)
+      {
+        dt[,(n):=NULL]
+      }
+    } else {
+      dt[[varnr]]<-var
+    }
+
+    if (length(vartypes)>0 && length(vartypes[[varnr]]>0)) {
+      setattr(dt[[varnr]],'measure_type', vartypes[[varnr]])
+      if (vartypes[[varnr]]=='O' && is.factor(dt[[varnr]]))
+      {
+        setattr(dt[[varnr]],'class', c(attr(dt[[varnr]])),"ordered")
+      }
+    }
+    return(var)
+  }
+
+
+  dts<-plyr::alply(seq_along(varnames),1, fn)
+  newdt=as.data.table(dts)
+  rownames(newdt) <- rownames(dt)
+  names(newdt) <- names(dt)
+
+  #  browser()
+  plyr::l_ply(seq_along(dt), function(varnr) setattr(newdt[[varnr]], 'label', Hmisc::label(dt[[varnr]])) )
+
+  return(list(errors=errors, warnings=mywarnings, dt=newdt))
+}

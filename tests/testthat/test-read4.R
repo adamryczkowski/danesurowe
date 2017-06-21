@@ -3,7 +3,7 @@ setwd('/home/Adama-docs/Adam/MyDocs/Statystyka/Maszyny/Dab2/R/danesurowe/tests/t
 context("Test reads")
 
 baseline<-readRDS('baseline4.rds')
-ourversion<-danesurowe::readDaneSurowe4('dane surowe2d.xlsm')
+ourversion<-danesurowe::readDaneSurowe4('dane surowe2d_2.xlsm')
 
 test_that("Read was successfull", ourversion<-danesurowe::readDaneSurowe4('dane surowe2d.xlsm'))
 

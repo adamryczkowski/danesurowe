@@ -45,7 +45,7 @@ format_values.integer<-function(values)
 
 format_values.numeric<-function(values)
 {
-  return(as.character(values))
+  return(trimws(as.character(haven::format_tagged_na(values))))
 }
 
 format_values.Date<-function(values)
@@ -103,8 +103,6 @@ format_values.labelled<-function(values)
       out[values==Lvalue]<-paste0(Lvalue, '(', Llabel, ')')
     }
   }
-
-
   return(out)
 }
 
@@ -191,6 +189,15 @@ format_case_value_diff_list<-function(case_names, values1, values2, flag_quote=F
   ))
 }
 
+format_variable_name <- function(colname, var) {
+  if(is.null(attr(var, 'label')))
+  {
+    return(colname)
+  } else {
+    return(paste0(attr(var, 'label'), '(', colname, ')'))
+  }
+}
+
 join_messages<-function(strvec1, strvec2, dt)
 {
   if(class(strvec1)=='character')
@@ -268,6 +275,39 @@ vartype2class <- function(vartype)
   )     )
 }
 
+#Returns a letter that encodes data type.
+class2vartype<-function(var)
+{
+  classes_sorted <- paste0(sort(class(var)), collapse=',')
+
+  if(classes_sorted == 'factor')
+  {
+    return('F')
+  } else if(classes_sorted == 'labelled')
+  {
+    return('L')
+  } else if(classes_sorted == 'integer')
+  {
+    return('I')
+  } else if(classes_sorted == 'numeric')
+  {
+    return('N')
+  } else if(classes_sorted == 'Date')
+  {
+    return('D')
+  } else if(classes_sorted == 'character')
+  {
+    return('S')
+  } else if(classes_sorted == 'logical')
+  {
+    return('0')
+  } else {
+    return('')
+#    stop(paste0("Unkown class: ", classes_sorted))
+#    browser()
+  }
+}
+
 is_vartype_numeric <- function(vartype)
 {
   return( switch(vartype,
@@ -286,11 +326,11 @@ compareNA <- function(v1,v2) {
   if(class(v1)=='numeric')
   {
 #    browser()
-    same <- as.integer(ifelse(is.na(v1) & is.na(v2), FALSE, ! (abs(v1 - v2) < 1E-6 & (is.na(v1) == is.na(v2)) )))
+    diff <- as.integer(ifelse(is.na(v1) & is.na(v2), FALSE, ! (abs(v1 - v2) < 1E-6 & (is.na(v1) == is.na(v2)) )))
   } else {
-    same <- as.integer(ifelse(is.na(v1) & is.na(v2), FALSE, ! ((v1 == v2) & (is.na(v1) == is.na(v2)) )))
+    diff <- as.integer(ifelse(is.na(v1) & is.na(v2), FALSE, ! ((v1 == v2) & (is.na(v1) == is.na(v2)) )))
   }
-  return(same)
+  return(diff)
 }
 
 #It uses implicitely errors and dt variable
@@ -318,3 +358,4 @@ add_msg<-function(varname, message, msg_list)
     msg_list[[varname]] <- message
   }
 }
+

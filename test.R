@@ -6,6 +6,19 @@
 
 library(danesurowe)
 
+
+#df1_key<-'q_0' df2_key<-NULL
+df2_all<-danesurowe::readDaneSurowe4('/home/Adama-docs/Adam/MyDocs/praca/masia@ibib/ALSdatabase/data/dane surowe2d.xlsm', flag_keep_tagged_na = TRUE)
+df2<-df2_all$dt
+
+#df2<-danesurowe::readDaneSurowe3('/home/Adama-docs/Adam/MyDocs/praca/masia@ibib/ALSdatabase/data/dane surowe2c.xlsm')
+df1<-danesurowe::readDaneSurowe3('/home/Adama-docs/Adam/MyDocs/praca/masia@ibib/ALSdatabase/data_review/corrections/als (2)_Lisbon reviewed_marta_1march.xlsm')
+diffdb<-df_difference(df1 = df1, df2 = df2, df1_key = 'q_0', df2_key='q_0')
+mydiffs<-diffdb$diffdb[status!=0,]
+mydiffs<-diffdb$diffdb[!is.na(df2_value) & !is.na(df1_value),]
+ans<-danesurowe::comment_diffs(diffdb = mydiffs, df1 = diffdb$df1, df1keys = diffdb$df1keys, df2 = diffdb$df2, df2keys = diffdb$df2keys)
+
+
 corfile<-'/home/adam/Documents/praca/masia@ibib/ALSdatabase/data_review/corrections/als (2)_Lisbon reviewed_marta_1march.xlsm'
 cordt<-danesurowe::readDaneSurowe3(corfile)
 
@@ -52,3 +65,24 @@ danesurowe::readCellAtAddress(address)
 
 dt<-danesurowe:::readDataSheet(file)
 danesurowe::readLabelSheet(file,dt)
+
+
+
+mean((df1 %>% filter(q_16b=='Yes'))$q_52b,na.rm=TRUE)
+sd((df1 %>% filter(q_16b=='Yes'))$q_52b,na.rm=TRUE)
+min((df1 %>% filter(q_16b=='Yes'))$q_52b,na.rm=TRUE)
+max((df1 %>% filter(q_16b=='Yes'))$q_52b,na.rm=TRUE)
+sum(!is.na((df1 %>% filter(q_16b=='Yes'))$q_52b))
+
+mean((df1 %>% filter(q_16a=='Yes'))$q_52b,na.rm=TRUE)
+sd((df1 %>% filter(q_16a=='Yes'))$q_52b,na.rm=TRUE)
+min((df1 %>% filter(q_16a=='Yes'))$q_52b,na.rm=TRUE)
+max((df1 %>% filter(q_16a=='Yes'))$q_52b,na.rm=TRUE)
+sum(!is.na((df1 %>% filter(q_16a=='Yes'))$q_52b))
+
+mean((df1 %>% filter(q_16c=='Yes' | q_16d=='Yes' | q_16e=='Yes' | q_16f=='Yes' | q_16g=='Yes'))$q_52b,na.rm=TRUE)
+sd((df1 %>% filter(q_16c=='Yes' | q_16d=='Yes' | q_16e=='Yes' | q_16f=='Yes' | q_16g=='Yes'))$q_52b,na.rm=TRUE)
+min((df1 %>% filter(q_16c=='Yes' | q_16d=='Yes' | q_16e=='Yes' | q_16f=='Yes' | q_16g=='Yes'))$q_52b,na.rm=TRUE)
+max((df1 %>% filter(q_16c=='Yes' | q_16d=='Yes' | q_16e=='Yes' | q_16f=='Yes' | q_16g=='Yes'))$q_52b,na.rm=TRUE)
+sum(!is.na((df1 %>% filter(q_16c=='Yes' | q_16d=='Yes' | q_16e=='Yes' | q_16f=='Yes' | q_16g=='Yes'))$q_52b))
+

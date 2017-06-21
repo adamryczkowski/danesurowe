@@ -2,11 +2,11 @@ readMeasureAndUnits<-function(file, dt)
 {
 
   address<-danesurowe::getNamedRange(file, getOption('rng_Measure'))
-
   rng<-readxl::read_excel(path=address$file, sheet=address$sheetname, col_names = FALSE)
   measures<-rng[[address$colnr]][(address$rownr+2):(address$rownr+1+ncol(dt))]
 
   address<-danesurowe::getNamedRange(file, getOption('rng_Units'))
+  rng<-readxl::read_excel(path=address$file, sheet=address$sheetname, col_names = FALSE)
   units<-rng[[address$colnr]][(address$rownr+2):(address$rownr+1+ncol(dt))]
 
   for (varnr in seq_along(measures))
@@ -22,6 +22,25 @@ readMeasureAndUnits<-function(file, dt)
     }
   }
 
+}
+
+readXLSFormulas<-function(file, dt) {
+  address<-danesurowe::getNamedRange(file, getOption('rng_XLSFormulas'))
+  rng<-readxl::read_excel(path=address$file, sheet=address$sheetname, col_names = FALSE)
+  xlsformulas<-rng[[address$colnr]][(address$rownr+2):(address$rownr+1+ncol(dt))]
+  return(xlsformulas)
+
+  address<-danesurowe::getNamedRange(file, getOption('rng_RFormulas'))
+  rng<-readxl::read_excel(path=address$file, sheet=address$sheetname, col_names = FALSE)
+  rformulas<-rng[[address$colnr]][(address$rownr+2):(address$rownr+1+ncol(dt))]
+
+}
+
+readRFormulas<-function(file, dt) {
+  address<-danesurowe::getNamedRange(file, getOption('rng_RFormulas'))
+  rng<-readxl::read_excel(path=address$file, sheet=address$sheetname, col_names = FALSE)
+  rformulas<-rng[[address$colnr]][(address$rownr+2):(address$rownr+1+ncol(dt))]
+  return(rformulas)
 }
 
 readTypes<-function(file, varcnt)
