@@ -7,7 +7,7 @@ fn_validate_ForceIntegers<-function(varnr, dt)
   if (is.null(vartype))
   {
     #Error! Nie dodaliśmy typu do zmiennej!...
-    return("")
+    return()
   }
   is_num<-switch(vartype, 'F'=1, 'L'=1, 'I'=1, 'N'=1, 'D'=1,0)
   force_integers<-attr(var, 'force_integers')
@@ -26,28 +26,25 @@ fn_validate_ForceIntegers<-function(varnr, dt)
     {
       cases=row.names(dt)[!which_int]
 
-      return(paste0(
-        'Variable ',
-        nice_varname(dt, varnr),
-        ' contains ',
-        ifelse(length(cases)>1,
-               paste0(length(cases),
-                      " cases"),
-               paste0(" a case")),
-        " with value that is not integer: ",
-        format_case_value_list(cases, var[!which_int]),
-        ". "))
+      add_msg(dt = dt, varname = colnames(dt)[[varnr]],
+              message = paste0(
+                'contains ',
+                ifelse(length(cases)>1,
+                       paste0(length(cases),
+                              " cases"),
+                       paste0(" a case")),
+                " with value that is not integer: ",
+                format_case_value_list(cases, var[!which_int])),
+              flag_show_type=TRUE)
     }
 
   }
-
-  return('')
 }
 
 fn_validate_TheoreticalMin<-function(varnr, dt)
 {
   #  cat(paste0(varnr,'\n'))
-  #if(varnr==132) browser();
+#  if(varnr==11) browser();
   var<-dt[[varnr]]
   vartype <- attr(var,'measure_type')
   if (is.null(vartype))
@@ -57,7 +54,6 @@ fn_validate_TheoreticalMin<-function(varnr, dt)
   }
   is_num<-switch(vartype, 'F'=1, 'L'=1, 'I'=1, 'N'=1, 'D'=1,0)
   mins<-attr(var, 'theoretical_min')
-  error <- ""
   if (!is.null(mins) && is_num)
   {
     which_min=var<mins
@@ -67,9 +63,7 @@ fn_validate_TheoreticalMin<-function(varnr, dt)
       cases=row.names(dt)[which_min]
       #browser()
       error <- paste0(
-        'Variable ',
-        nice_varname(dt, varnr),
-        ' contains ',
+        'contains ',
         ifelse(length(cases)>1,
                paste0(length(cases),
                       " cases"),
@@ -104,26 +98,18 @@ fn_validate_TheoreticalMin<-function(varnr, dt)
                         ))
       } else {
         error <- paste0(
-          'Variable ',
-          nice_varname(dt, varnr),
-          ' contains ',
+          'contains ',
           ifelse(length(cases)>1,
                  paste0(length(cases),
                         " cases"),
                  paste0(" a case")),
           " with value greater than theoretical max: ",
-          format_case_list(cases, FALSE),
-          ". ")
-      }
-    } else {
-      if (nchar(error)>0)
-      {
-        error <- paste0(error, ". ")
+          format_case_list(cases, FALSE))
       }
     }
-    return(error)
+    add_msg(dt=dt, varname = colnames(dt)[[varnr]],
+            message = error)
   }
-  return('')
 }
 
 fn_validate_Required<-function(varnr, dt)
@@ -137,19 +123,16 @@ fn_validate_Required<-function(varnr, dt)
     {
       cases=row.names(dt)[which_required]
 
-      return(paste0(
-        'Variable ',
-        nice_varname(dt, varnr),
-        ' contains ',
+      msg<-paste0(
+        'contains ',
         ifelse(length(cases)>1,
                paste0(length(cases),
                       " missing data in the following cases: "),
                paste0("a missing data in the following case: ")),
-        format_case_list(cases, FALSE),
-        '. ')
-      )
+        format_case_list(cases, FALSE))
+      add_msg(dt=dt, varname = colnames(dt)[[varnr]],
+              message = msg)
     }
-
   }
   return('')
 }
@@ -176,15 +159,16 @@ fn_validate_Type<-function(varnr, dt)
   {
     if (sum(!is.na(var))>0)
     {
-      return(paste0(
-        'Variable ',
-        nice_varname(dt, varnr),
-        ' should be empty, but it contains ',
-        ifelse(sum(!is.na(var))>1,
-               paste0(sum(!is.na(var)),
-                      " non-missing cases. "),
-               paste0("1 non-missing case. "))
-      ))
+      add_msg(dt=dt, varname=varname,
+              message=
+                paste0(
+                  'should be empty, but it contains ',
+                  ifelse(sum(!is.na(var))>1,
+                         paste0(sum(!is.na(var)),
+                                " non-missing cases. "),
+                         paste0("1 non-missing case. "))
+                ))
+      return()
     }
   } else if (vartype=='F' || vartype=='L' || vartype == 'I' || vartype == 'N' || vartype == 'D' || vartype == 'S')
   {
@@ -200,9 +184,7 @@ fn_validate_Type<-function(varnr, dt)
         return('') #Don't bother about problems with conversion between integer and numeric
       }
       msg <- paste0(
-        'Variable ',
-        nice_varname(dt, varnr),
-        " should be ",
+        "should be ",
         intended_class,
         " but in fact is of type(s) ",
         paste0(class(var), collapse = ' and '),
@@ -215,32 +197,31 @@ fn_validate_Type<-function(varnr, dt)
         if (sum(non_numeric)>0)
         {
           msg<-paste0(msg,
-                      "The following ",
+                      "contains ",
                       ifelse(sum(non_numeric)>1,
-                             paste0(sum(non_numeric),
-                                    " cases are"),
-                             paste0("case is")),
+                             'cases that are ',
+                             'case that is'),
                       " non-numeric: ",
-                      format_case_value_list(case_names = rownames(dt)[non_numeric], values=var[non_numeric]),
-                      ". ")
+                      format_case_value_list(case_names = rownames(dt)[non_numeric], values=var[non_numeric])
+          )
         }
       }
-      return(msg)
+      add_msg(dt=dt, varname = varname, message = msg)
+      return()
       #todo: Jeśli zmienna aktualna jest character, a wpisana jest, że ma być inna, to wypisz przypadki tekstowe do raportu błędu
     }
   } else
   {
-    return(paste0(
-      'Variable ',
-      nice_varname(dt, varnr),
-      " has unknown type(s) ",
-      class(vartype),
-      '. (It belongs to the following classes: ',
-      paste0(class(var), collapse = ' and '),
-      "). "
-    ))
+    add_msg(dt=dt, varname = varname,
+            paste0(
+              "has unknown type(s) ",
+              class(vartype),
+              '. (It belongs to the following classes: ',
+              paste0(class(var), collapse = ' and '),
+              "). "
+            ))
   }
-  return("")
+  return()
 }
 
 fn_validate_LimitToLabels<-function(varnr, dt)
@@ -285,27 +266,27 @@ fn_validate_LimitToLabels<-function(varnr, dt)
 
     if (length(vars)>0)
     {
-      msg<-paste0("Variable ",
-                  nice_varname(dt, varnr),
-                  " contains ",
-                  ifelse(length(vars)>1,
-                         paste0(length(cases),
-                                " values that are"),
-                         paste0(" a value that is")),
-                  " not labelled: ",
-                  format_case_value_list(case_names = cases, values = as.numeric(vars)))
-      return(msg)
+      add_msg(dt=dt, varname = colnames(dt)[[varnr]],
+              message =  paste0(
+                "contains ",
+                ifelse(length(vars)>1,
+                       paste0(length(cases),
+                              " values that are"),
+                       paste0(" a value that is")),
+                " not labelled: ",
+                format_case_value_list(case_names = cases, values = as.numeric(vars))))
+      return()
     }
   }
-  return('')
+  return()
 }
 
-is_symbol_recursive<-function(symbol, dt, forbidden_symbols) {
+is_symbol_recursive<-function(symbol, dt, forbidden_symbols=NULL) {
   if (!symbol %in% colnames(dt)) {
     browser() #Makes no sense to ask for a proprty of a symbol that's not there
   }
 
-  local_symbols <- GetRFormulaSymbols(var)
+  local_symbols <- GetRFormulaSymbols(symbol)
   if (any(forbidden_symbols %in% local_symbols)){
     return(list(ans=TRUE, path=symbol))
   }
@@ -319,28 +300,39 @@ is_symbol_recursive<-function(symbol, dt, forbidden_symbols) {
   return(list(ans=FALSE))
 }
 
+
+locateSymbol<-function(symbol, startenv=globalenv(), nest_level=1) {
+  if(environmentName(startenv)=='R_EmptyEnv') {
+    return(list(nest_level=nest_level, env_name = NA))
+  }
+  if(exists(symbol, envir=startenv, inherits = FALSE)) {
+    return(list(nest_level=nest_level,env_name = environmentName(startenv)))
+  } else {
+    return(locateSymbol(symbol, parent.env(startenv), nest_level = nest_level +1))
+  }
+}
+
 fn_validate_Formulas<-function(varnr, dt)
 {
   #  if(varnr==12)
   #    browser()
-  #  cat(paste0(varnr,'\n'))
-  #  if (varnr==12) browser();
+  cat(paste0(varnr,'\n'))
+#  if (varnr==19) browser();
+  #  if (varnr==4) browser();
   var<-dt[[varnr]]
 
-  rformula="var1+abs(var1-var2)*fkcja(sin(var3)-var2^var3)"
   rformula <- GetRFormula(var)
 
-  if (rformula=='') {
+  if (is.na(rformula)) {
     return('')
   }
 
-  eformula <- tryCatch(parse(text=str), error=function(e) e)
+  eformula <- tryCatch(parse(text=rformula), error=function(e) e)
   if ('error' %in% class(eformula)) {
-    msg <- paste0("There is a syntax error in formula attached to the variable ",
-                  nice_varname(dt, varnr),
-                  ": ",
-                  eformula$message)
-    return(msg)
+    add_msg(dt=dt, varname = colnames(dt)[[varnr]],
+            message = paste0("has the following syntax error in its formula: *",
+                             eformula$message, "*. "), flag_show_formula=TRUE)
+    return()
   }
 
   if(!is.expression(eformula)) {
@@ -348,90 +340,142 @@ fn_validate_Formulas<-function(varnr, dt)
     #unknown error. Result of parse should always be of type expression
   }
 
-  symbole <- Vectorize(exists)(all.names(parse(text = eformula)))
-  symbole <- unique(names(symbole[!symbole]))
+  symbole <- unique(all.names(eformula))
 
-  existances <- symbole %in% c(paste0('var',1:10))
-  existances <- symbole %in% colnames(dt)
+  #We filter out symbols, that are known globally, like pi
+  if(length(symbole)>0) {
+    global_symbols <- symbole[!purrr::map_lgl(purrr::map_chr(purrr::map(symbole, locateSymbol), 'env_name'), is.na)]
+    symbols_to_remove <- setdiff(global_symbols, colnames(dt))
+    symbole <- setdiff(symbole, symbols_to_remove)
 
-  missings <- symbole[!existances]
-  if (length(missings)>0){
-    msg <- paste0("The following symbols are not defined in the formula of ",
-                  nice_varname(dt, varnr),
-                  ": ",
-                  format_case_list(missings, flag_quote = TRUE),
-                  ". Without them, cannot evaluate the formula")
-    return(msg)
+    existances <- symbole %in% colnames(dt)
+
+    missings <- symbole[!existances]
+    if (length(missings)>0){
+      add_msg(dt=dt, varname=colnames(dt)[[varnr]],
+              message= paste0("has a formula that refers to the following udefined symbols: ",
+                              format_case_list(missings, flag_quote = TRUE)), flag_show_formula=TRUE)
+      return()
+    }
   }
+
 
   #Upewniamy się, że drugi typ formuły też jest wpisany
   xlsformula <- GetExcelFormula(var)
-  if (nchar(xlsformula)==0) {
-    msg <- paste0("There is no Excel counterpart for R formula ",
-                  deparse(eformula), " for variable ", nice_varname(dt, varnr), ". ")
+  if (is.na(xlsformula)) {
+    add_msg(dt=dt, varname=colnames(dt)[[varnr]],
+            message = paste0("has no Excel counterpart for the R formula"))
   } else {
     if (stringr::str_sub(xlsformula, 1,1)!='='){
-      msg <- paste0('Excel formula "', xlsformula, '" for variable ', nice_varname(dt, varnr),
-                    'does not start with "=".')
+      add_msg(dt=dt, varname=colnames(dt)[[varnr]],
+              message = paste0("has the Excel formula `", xlsformula, "` that does not start with the `=`"), flag_show_formula=TRUE)
     }
   }
 
   #Teraz sprawdzamy, czy nie ma rekurencji w wywołaniach symboli
-  ans<-is_symbol_recursive(colnames(dt)[[varnr]])
-  if (ans$ans) {
-    if (length(ans)==1) {
-      msg <- paste0(msg, 'Formula for variable ', nice_varname(dt, varnr), ' "', deparse(eformula), '" references itself.')
-    } else if(length(ans)==2)  {
-      msg <- paste0(msg, 'Circular references in formula "', deparse(eformula), '" for variable ',
-                    nice_varname(dt, varnr), ". ",
-                    "The definition of ", ans$path[[1]], " depends on ", colnames(dt)[[varnr]], ". ")
-    } else {
-      msg <- paste0(msg, 'Circular references in formula for variables ', nice_varname(dt, varnr), ': ',
-                    paste0(ans$path, collapse = '⇒')
-                    )
+  #
+  if(length(symbole)>0) {
+    ans<- purrr::map(symbole, function(smb) is_symbol_recursive(symbol = smb, dt = dt))
+    which_ans <- purrr::map_lgl(ans, 'ans')
+    ans <- purrr::map_chr(ans[which_ans], 'path')
+
+    if (length(ans)>0){
+      for(path in ans) {
+        if (length(path)==1) {
+          add_msg(dt=dt, varname=colnames(dt)[[varnr]],
+                  message = paste0('has a formula that references itself'), flag_show_formula=TRUE)
+        } else if(length(path)==2)  {
+          add_msg(dt=dt, varname=colnames(dt)[[varnr]],
+                  message = paste0('has circular references in its formula: "',
+                                   "the definition of `", path[[1]],
+                                   "` depends on the definition of `", colnames(dt)[[varnr]], '`'),
+                  flag_show_formula=TRUE)
+        } else {
+          add_msg(dt=dt, varname=colnames(dt)[[varnr]],
+                  message = paste0('has circular references in its formula; "',
+                                   paste0('`', path, '`', collapse = '⇒')),
+                  flag_show_formula = TRUE)
+        }
+      }
+      return()
     }
-    return(msg)
   }
 
 
   #Teraz liczymy wektor formuły i upewniamy się, że jego zawartość zgadza się z tym, co w zmiennej
   var2 <- tryCatch(
-    lazyeval::lazy_eval(eformula, data = dt),
+    eval(eformula,envir = dt),
     error=function(e){e}
   )
-  if ('error' %in% class(ans)){
-    msg <- paste0(msg, 'There was an error in evaluating formula "', deparse(eformula), ' for variable ', nice_varname(dt, varnr),
-                  ': ', error$message)
-    return(msg)
+  if ('error' %in% class(var2)){
+    add_msg(dt=dt, varname=colnames(dt)[[varnr]],
+            message = paste0('has a formula that evaluates with the following error: *', var2$message, '*'),
+            flag_show_formula = TRUE)
+
+    return()
   }
 
   if(class2vartype(var2)=='') {
-    msg <- paste0(msg, 'Effect of evaluation of "', deparse(eformula),
-                  '" in variable ', nice_varname(dt,varnr),
-                  ' is of uncompatible class ', paste0(class(var2), collapse = ", "), ". Cannot validate further. ")
-    return(msg)
+    add_msg(dt=dt, varname=colnames(dt)[[varnr]],
+            message = paste0('has a formula that evaluates to value of uncompatible class ',
+                             paste0('`', class(var2), '`', collapse = ", ")),
+            flag_show_formula = TRUE)
+
+    return()
   }
 
-  if (length(var2)!=length(var) && length(var2)!=1) {
-    msg <- paste0('Formula "', deparse(eformula),
-                  '" for variable ', nice_varname(dt,varnr),
-                  ' produces vector of size ', length(var2), " where size ", length(var), " was expected. " )
-    return(msg)
+  if (length(var2)!=length(var) && length(var2)!=1 ) {
+    add_msg(dt=dt, varname=colnames(dt)[[varnr]],
+            message = paste0('has a formula that produces vector of size ',
+                             length(var2), " where size ", length(var), " was expected" ),
+            flag_show_formula = TRUE)
+    return()
   }
+
+  if(IsVariableValidation(dt = dt, varnr=varnr))  {
+    if(!class(var2) %in% c('numeric', 'logical', 'integer' ))
+    {
+      add_msg(dt=dt, varname=colnames(dt)[[varnr]],
+              message = paste0('evaluates to type `', class(var2),
+                               '`, where type `logical` or numeric was expected' ),
+              flag_show_formula = TRUE)
+      return()
+    }
+  } else {
+    if (is.list(var2) || length(intersect(class(var), class(var2)))==0) {
+      add_msg(dt=dt, varname=colnames(dt)[[varnr]],
+              message = paste0('has a formula that produces incompatible object of type `', class(var2),
+                               '`, where type `', class(var), "` was expected" ),
+              flag_show_formula = TRUE)
+      return()
+    }
+  }
+
+
 
   diffs <- compare_two_variables(var2, var)$compvar
   if (sum(diffs)>0) {
     if (sum(diffs) == length(var)) {
-      msg<- paste0(msg, 'All values computed with the formula "', deparse(eformula), '" differ form existing values for variable ', nice_varname(dt,varnr))
+      add_msg(dt=dt, varname=colnames(dt)[[varnr]],
+              message = paste0('has a formula that evaluates to a vector with all values different from existing values'),
+              flag_show_formula = TRUE)
+
     } else if (sum(diffs)*2 > length(var)){
-      msg<- paste0(msg, 'Most values computed with the formula "', deparse(eformula), '" differ form existing values for variable ', nice_varname(dt,varnr))
+      add_msg(dt=dt, varname=colnames(dt)[[varnr]],
+              message = paste0('has a formula that evaluates to a vector with most (', sum(diffs),
+                               ') values different form existing values'),
+              flag_show_formula = TRUE)
     } else {
-      msg<- paste0(msg, sum(diffs), ' values computed with the formula "', deparse(eformula), '" differ form existing values for variable ', nice_varname(dt,varnr))
+      add_msg(dt=dt, varname=colnames(dt)[[varnr]],
+              message = paste0('has a formula that evaluates to a vector with', sum(diffs),
+                               ' values different from existing values',
+                               nice_varname(dt,varnr)),
+              flag_show_formula = TRUE)
     }
-    return(msg)
+    return()
   }
 
-  return('')
+  return()
 
 }
 
@@ -449,12 +493,12 @@ set_TheoreticalMinMax<-function(dt, mins, maxs)
       setattr(dt[[varnr]],'theoretical_max', maxs[[varnr]])
     }
   }
-  #browser()
 
-  plyr::a_ply(seq_along(dt), 1, fn_set)
+  purrr::walk(seq_along(dt), fn_set)
+  purrr::walk(seq_along(dt), fn_validate_TheoreticalMin, dt=dt)
+ # browser()
 
-  errors<-plyr::aaply(seq_along(dt),1,fn_validate_TheoreticalMin, dt=dt)
-  return(list(dt=dt, errors=errors))
+  return(dt)
 }
 
 set_ForcedIntegers<-function(dt, forcedIntegers)
@@ -467,12 +511,11 @@ set_ForcedIntegers<-function(dt, forcedIntegers)
     }
 
   }
-  #browser()
 
-  plyr::a_ply(seq_along(dt), 1, fn_set)
+  purrr::walk(seq_along(dt), fn_set)
+  purrr::walk(seq_along(dt), fn_validate_ForceIntegers, dt=dt)
 
-  errors<-plyr::aaply(seq_along(dt),1,fn_validate_ForceIntegers, dt=dt)
-  return(list(dt=dt, errors=errors))
+  return(dt)
 }
 
 set_Required<-function(dt, required)
@@ -486,10 +529,10 @@ set_Required<-function(dt, required)
   }
   #browser()
 
-  plyr::a_ply(seq_along(dt), 1, fn_set)
+  purrr::walk(seq_along(dt), fn_set)
+  purrr::walk(seq_along(dt), fn_validate_Required, dt=dt)
 
-  errors<-plyr::aaply(seq_along(dt),1,fn_validate_Required, dt=dt)
-  return(list(dt=dt, errors=errors))
+  return(dt)
 }
 
 
@@ -504,83 +547,107 @@ set_LimitToLabels<-function(dt, limitToLabels)
   }
   #browser()
 
-  plyr::a_ply(seq_along(dt), 1, fn_set)
+  purrr::walk(seq_along(dt), fn_set)
+  purrr::walk(seq_along(dt), fn_validate_LimitToLabels, dt=dt)
 
-  errors<-plyr::aaply(seq_along(dt),1,fn_validate_LimitToLabels, dt=dt)
-  return(list(dt=dt, errors=errors))
+  return(dt)
 }
 
 set_Formulas<-function(dt, xlsformulas, rformulas)
 {
   for (varnr in seq_along(xlsformulas)){
     var <- dt[[varnr]]
-    if (!is.na(GetExcelFormula(var))) {
+    if (!is.na(xlsformulas[[varnr]])) {
       setattr(dt[[varnr]], 'xls_formula',  xlsformulas[[varnr]] )
     }
-    if (!is.na(GetRFormula(var))) {
+    if (!is.na(rformulas[[varnr]])) {
       setattr(dt[[varnr]], 'r_formula',  rformulas[[varnr]] )
     }
   }
 
-  errors<-plyr::aaply(seq_along(dt),1,fn_validate_Formulas, dt=dt)
-  return(list(dt=dt, errors=errors))
 
+  purrr::walk(seq_along(dt), fn_validate_Formulas, dt=dt)
+
+  return(dt)
+}
+
+fn_validateCustom<-function(varnr, dt)
+{
+#  if(varnr==18) browser()
+#  if(varnr==19) browser()
+  #  browser()
+  validations <- GetValidations(dt[[varnr]])
+  if(IsVariableValidation(dt, varnr)) {
+    if(!is.null(validations)) {
+      add_msg(dt=dt, varname = colnames(dt)[[varnr]],
+              message = paste0("contains its own validation rules"))
+    }
+    return()
+  }
+
+  basevarname <- colnames(dt)[[varnr]]
+
+  for(validation in validations) {
+    varname <- validation$varname
+    #      browser()
+    basevarNotNA <- !is.na(dt[[basevarname]])
+    validatevar <- dt[[varname]]==0
+    checkvar <- validatevar * basevarNotNA != 0
+    if (sum(checkvar, na.rm=TRUE)>0)
+    {
+      pos <- which(checkvar)
+      cases <- row.names(dt)[checkvar]
+      vartype <- attr(var,'measure_type')
+
+      msg <- paste0(
+        Hmisc::label(dt[[varname]]),
+        " in the following ",
+        ifelse(sum(checkvar)>1,
+               paste0(sum(checkvar),
+                      " cases"),
+               paste0(" case")),
+        ": ",
+        format_case_value_list(case_names = cases, values = dt[[varnr]][checkvar]
+        )
+      )
+      add_msg(dt=dt, varname = basevarname,
+              message = msg)
+    }
+  }
+  return()
 }
 
 ValidateCustom<-function(dt)
 {
-  #  browser()
-  varnr <- 1
-  basevarnr <- 1
-  errors <- new.env()
-  while(varnr <= length(dt))
-  {
-    #    cat(paste0(varnr,'\n'))
-    #    if(varnr==196) browser()
-    varname<-colnames(dt)[[varnr]]
-    if(stringr::str_detect(varname,pattern="^\\..*$"))
-    {
-      #      browser()
-      basevarNotNA <- !is.na(dt[[basevarnr]])
-      validatevar <- dt[[varnr]]==0
-      checkvar <- validatevar * basevarNotNA != 0
-      if (sum(checkvar, na.rm=TRUE)>0)
-      {
-        pos <- which(checkvar)
-        cases <- row.names(dt)[checkvar]
-        vartype <- attr(var,'measure_type')
-
-        msg <- paste0(
-          "In the following ",
-          ifelse(sum(checkvar)>1,
-                 paste0(sum(checkvar),
-                        " cases"),
-                 paste0(" case")),
-          " Variable ",
-          nice_varname(dt, basevarnr),
-          " ",
-          Hmisc::label(dt[[varnr]]),
-          ": ",
-          format_case_value_list(case_names = cases, values = dt[[basevarnr]][checkvar]
-          )
-        )
-        add_msg(varname = varname, message = msg, msg_list = errors)
+  base_varname <- NA
+  for (varnr in seq_along(dt)){
+    var <- dt[[varnr]]
+    varname <- colnames(dt)[[varnr]]
+    if(IsVariableValidation(dt, varnr)) {
+      if(is.na(base_varname)) {
+        add_msg(dt=dt, varname = varname,
+                message = paste0("has a name that starts with the `.validate`, yet there is no predecessor variable to validate"))
+      } else {
+        validations <- attr(dt[[base_varname]], 'validations')
+        setattr(dt[[base_varname]], 'validations', c(validations, list(list(varname=varname))))
       }
     } else {
-      basevarnr <- varnr
+      base_varname <- colnames(dt)[[varnr]]
     }
-    varnr <- varnr + 1
   }
+
   #browser()
 
-  return(errors=errors)
+  purrr::walk(seq_along(dt), fn_validateCustom, dt=dt)
+  return(dt)
 }
+
 
 ValidateTypes<-function(dt)
 {
   #browser()
 
-  errors<-plyr::aaply(seq_along(dt),1,fn_validate_Type, dt=dt)
-  return(errors)
+  purrr::walk(seq_along(dt), fn_validate_Type, dt=dt)
+  return(dt)
 }
 

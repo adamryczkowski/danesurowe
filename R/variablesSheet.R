@@ -3,11 +3,11 @@ readMeasureAndUnits<-function(file, dt)
 
   address<-danesurowe::getNamedRange(file, getOption('rng_Measure'))
   rng<-readxl::read_excel(path=address$file, sheet=address$sheetname, col_names = FALSE)
-  measures<-rng[[address$colnr]][(address$rownr+2):(address$rownr+1+ncol(dt))]
+  measures<-rng[[address$colnr]][(address$rownr+2):(address$rownr+ncol(dt))]
 
   address<-danesurowe::getNamedRange(file, getOption('rng_Units'))
   rng<-readxl::read_excel(path=address$file, sheet=address$sheetname, col_names = FALSE)
-  units<-rng[[address$colnr]][(address$rownr+2):(address$rownr+1+ncol(dt))]
+  units<-rng[[address$colnr]][(address$rownr+2):(address$rownr+ncol(dt))]
 
   for (varnr in seq_along(measures))
   {
@@ -24,22 +24,19 @@ readMeasureAndUnits<-function(file, dt)
 
 }
 
-readXLSFormulas<-function(file, dt) {
+readXLSFormulas<-function(file, varcnt) {
   address<-danesurowe::getNamedRange(file, getOption('rng_XLSFormulas'))
   rng<-readxl::read_excel(path=address$file, sheet=address$sheetname, col_names = FALSE)
-  xlsformulas<-rng[[address$colnr]][(address$rownr+2):(address$rownr+1+ncol(dt))]
+  xlsformulas<-rng[[address$colnr]][(address$rownr+1):(address$rownr+varcnt)]
+  xlsformulas[xlsformulas=='']<-NA
   return(xlsformulas)
-
-  address<-danesurowe::getNamedRange(file, getOption('rng_RFormulas'))
-  rng<-readxl::read_excel(path=address$file, sheet=address$sheetname, col_names = FALSE)
-  rformulas<-rng[[address$colnr]][(address$rownr+2):(address$rownr+1+ncol(dt))]
-
 }
 
-readRFormulas<-function(file, dt) {
+readRFormulas<-function(file, varcnt) {
   address<-danesurowe::getNamedRange(file, getOption('rng_RFormulas'))
   rng<-readxl::read_excel(path=address$file, sheet=address$sheetname, col_names = FALSE)
-  rformulas<-rng[[address$colnr]][(address$rownr+2):(address$rownr+1+ncol(dt))]
+  rformulas<-rng[[address$colnr]][(address$rownr+1):(address$rownr+varcnt)]
+  rformulas[rformulas=='']<-NA
   return(rformulas)
 }
 
@@ -52,9 +49,9 @@ readTypes<-function(file, varcnt)
   return(measures)
 }
 
-readMinMax<-function(file, varcnt)
+readMinMax<-function(file, dt)
 {
-  errors<-new.env()
+  varcnt <- ncol(dt)
   address<-danesurowe::getNamedRange(file, getOption('rng_TheoreticalMin'))
   rng<-readxl::read_excel(path=address$file, sheet=address$sheetname, col_names = FALSE)
   mins<-rng[[address$colnr]][(address$rownr+1):(address$rownr+varcnt)]
@@ -75,22 +72,28 @@ readMinMax<-function(file, varcnt)
     wrongmax <- is.na(maxsnum[[varnr]]) && !namaxs[[varnr]]
     if (wrongmin && wrongmax)
     {
-      errors[[varnr]] <<- paste0("Minimal and maximal theroretical value must be numeric, not \"",
+      add_msg(dt = dt, varname = colnames(dt)[[varnr]],
+              message = paste0("Minimal and maximal theroretical value must be numeric, not \"",
                       mins[[varnr]],
                       "\" and \"",
                       maxs[[varnr]],
                       "\".")
+      )
     } else {
       if (wrongmin)
       {
-        errors[[varnr]] <<- paste0("Minimal theoretical value must be numeric, not \"",
+        add_msg(dt = dt, varname = colnames(dt)[[varnr]],
+                message = paste0("Minimal theoretical value must be numeric, not \"",
                         mins[varnr],
                         "\".")
+        )
       } else if (wrongmax)
       {
-        errors[[varnr]] <<- paste0("Maximal theoretical value must be numeric, not \"",
+        add_msg(dt = dt, varname = colnames(dt)[[varnr]],
+                message = paste0("Maximal theoretical value must be numeric, not \"",
                         maxs[varnr],
                         "\".")
+        )
       } else
       {
         #errors[[varnr]] <<- character(0)
@@ -99,9 +102,8 @@ readMinMax<-function(file, varcnt)
 
   }
 #  browser()
-  errors <- rep("", length(mins))
   plyr::a_ply(seq(varcnt-1), 1, fn)
-  return(list(mins=minsnum, maxs=maxsnum, errors=errors))
+  return(list(mins=minsnum, maxs=maxsnum))
 }
 
 readForceInteger<-function(file, varcnt)

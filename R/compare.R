@@ -62,24 +62,17 @@ comparedf<-function(df1, df2)
 
   makeHash<-function(var, dosort)
   {
+#  	if(Hmisc::label(var)=='Other (specify)') browser()
+#  	cat(paste0(Hmisc::label(var),'\n'))
     if (dosort)
     {
-      if(is.character(var))
-      {
-        return(digest::digest(stringi::stri_encode(sort(as.vector(var)))))
-      } else {
-        return(digest::digest(sort(as.vector(var))))
-      }
+    	return(digest::digest(sort(var)))
     } else {
-      if(is.character(var))
-      {
-        return(digest::digest(stringi::stri_encode(as.vector(var))))
-      } else {
-        return(digest::digest(as.vector(var)))
-      }
+      return(digest::digest(var))
     }
   }
 
+#  browser()
   varHashes1<-plyr::laply(as.list(df1)[commonnames], makeHash, dosort=TRUE)
   names(varHashes1)<-commonnames
   varHashes2<-plyr::laply(as.list(df2)[commonnames], makeHash, dosort=TRUE)

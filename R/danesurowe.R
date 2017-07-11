@@ -72,6 +72,53 @@ IsRequired<-function(var)
   }
 }
 
+GetFOB<-function(var) {
+  if(is.null(attr(var, 'f.o.b'))) {
+    typ <- class2vartype(var)
+    if(typ %in% c('F', 'L')) {
+      labs <- GetLabels(var)
+      if(length(labs)==2) {
+        data.table::setattr(var, 'f.o.b', 3)
+      } else {
+        if (AreLabelsRequired(var)) {
+          data.table::setattr(var, 'f.o.b', 1)
+        } else {
+          data.table::setattr(var, 'f.o.b', 2)
+        }
+      }
+    } else if (typ %in% c('I', 'N', 'D') ) {
+      data.table::setattr(var, 'f.o.b', 0)
+    } else if (typ == '0') {
+      data.table::setattr(var, 'f.o.b', 3)
+    } else if (typ == 'S') {
+      u <- unique(var)
+      if (length(u)>2) {
+        data.table::setattr(var, 'f.o.b', 1)
+      } else {
+        data.table::setattr(var, 'f.o.b', 3)
+      }
+    } else {
+      browser()
+    }
+  }
+
+  return(attr(var, 'f.o.b'))
+}
+
+AreLabelsRequired<-function(var) {
+  val<-attr(var,'required')
+  typ <- class2vartype(var)
+  if (typ == 'F') {
+    return(TRUE)
+  } else {
+    if(is.null(val)){
+      return(val)
+    } else {
+      return(FALSE)
+    }
+  }
+}
+
 GetLevels<-function(var)
 {
   if('factor' %in% class(var))
@@ -208,7 +255,7 @@ GetRFormula<-function(var) {
 GetRFormulaSymbols<-function(var) {
   rformula <- GetRFormula(var)
 
-  symbole <- Vectorize(exists)(all.names(parse(text = eformula)))
+  symbole <- Vectorize(exists)(all.names(parse(text = rformula)))
   symbole <- unique(names(symbole[!symbole]))
   return(symbole)
 }
@@ -230,3 +277,101 @@ GetTheoreticalMax<-function(var) {
     return(val)
   }
 }
+
+IsVariableValidation<-function(dt, varnr) {
+  varname <- colnames(dt)[[varnr]]
+  return(stringr::str_sub(varname,end=nchar('.valid')) == '.valid')
+
+}
+
+GetValidations<-function(var) {
+  val <- attr(var, 'validations')
+  return(val)
+}
+
+GetProblems<-function(dt) {
+  contexts <- purrr::map_lgl(dt, function(v) is.null(attr(v,'warnings_context') ))
+  warnings <- purrr::map(dt, function(v) attr(v,'warnings') )
+  varnames <- names(contexts)[!contexts]
+  warnings <- warnings[!contexts]
+  long_varnames <- map_chr(varnames, function(varname) getProblemContextForVariable(dt, varname))
+  entries <- map_chr(warnings, function(w) {
+    if(length(w)==1) {
+      return(w)
+    } else {
+      return(pander::pandoc.list.return(paste0(w,'\n\n'),style = 'bullet' ,add.line.breaks=TRUE,  add.end.of.list = FALSE, loose=TRUE))
+    }})
+  df <- data.table("Variable description"= long_varnames, Problems=entries)
+  caption = paste0("Problems with the dataframe ", attr(dt, 'label'))
+  tab<-pander::pandoc.table.return(df, caption=caption, justify = 'll', use.hyphening = TRUE, style='grid', split.tables = Inf , split.cells = 80, keep.line.breaks = TRUE  )
+  myrap<-pander::Pandoc$new()
+  myrap$format <- 'docx'
+  myrap$title <- "Variable validation report"
+  myrap$author <- "Adam Ryczkowski"
+
+  myrap$add.paragraph(tab)
+  myrap$export('tmp.docx')
+  return(tab)
+}
+
+getProblemContextForVariable<-function(dt, varname) {
+  var <- dt[[varname]]
+  if( does_show_type(var) ) {
+    mytype=class2vartype(var)
+    mytype=switch(mytype,
+                  'F' = 'factor',
+                  L = 'labelled',
+                  I = 'integer',
+                  D = 'Date',
+                  S = 'character',
+                  '0' = 'logical',
+                  N = 'numeric',
+                  NA)
+    if(is.na(mytype)) {
+      #unknown type
+      browser()
+    }
+    msg<-paste0(mytype, ' variable ')
+  } else {
+    msg<-''
+  }
+  msg <- paste0(msg,
+                Hmisc::label(var)
+  )
+  if(does_show_varnr(var)) {
+    msg <- paste0(msg,
+                  ' (variable number  ', which.max(colnames(dt) == varname ),
+                  ', `', varname, '`) '
+    )
+  } else {
+    msg <- paste0(msg,
+                  ' (`', varname, '`) '
+    )
+  }
+
+  if(does_show_formula(var)) {
+    msg <- paste0(msg,
+                  ' with formula `', GetRFormula(var), '` '
+    )
+  }
+  return(msg)
+}
+
+GetMessagesForVariable<-function(dt, varname, flag_give_context = TRUE) {
+
+  if(flag_give_context) {
+    msg <- getProblemContextForVariable(dt, varname)
+  } else {
+    msg <- ''
+  }
+
+  a<-attr(var, 'warnings')
+
+  if(!is.null(a)) {
+    msg <- paste0(msg, paste0(ifelse(stringr::str_sub(a, -2)=='. ',stringr::str_sub(a, 1, -3), a), collapse = ', '), ". ")
+  }
+
+
+  return(msg)
+}
+

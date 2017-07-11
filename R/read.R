@@ -72,54 +72,39 @@ readDaneSurowe4 <- function(file, flag_keep_tagged_na = FALSE) {
   errors<-ans$errors
   mywarnings<-ans$warnings
 
-  ans<-readMinMax(file, ncol(dt))
-  errors<-join_messages(errors, ans$errors, dt)
+  ans<-readMinMax(file, dt)
 
-  ans<-set_TheoreticalMinMax(dt, ans$mins, ans$maxs)
-  errors<-join_messages(errors, ans$errors, dt)
-  dt<-ans$dt
+  dt<-set_TheoreticalMinMax(dt, ans$mins, ans$maxs)
 
   forceIntegers<-readForceInteger(file, ncol(dt))
-  ans<-set_ForcedIntegers(dt, forceIntegers)
-  errors<-join_messages(errors, ans$errors, dt)
-  dt<-ans$dt
+  dt<-set_ForcedIntegers(dt, forceIntegers)
 
-  errors<-join_messages(errors, ValidateTypes(dt), dt)
+  dt<-ValidateTypes(dt)
 
   required<-readRequired(file, ncol(dt))
-  ans<-set_Required(dt, required)
-  errors<-join_messages(errors, ans$errors, dt)
+  dt<-set_Required(dt, required)
 
  # browser()
-  ints<-readLimitedToLabels(file, ncol(ans$dt))
-  ans<-set_LimitToLabels(dt, ints)
-  errors<-join_messages(errors, ans$errors, dt)
+  ints<-readLimitedToLabels(file, ncol(dt))
+  dt<-set_LimitToLabels(dt, ints)
 
 
-  xlsformulas<-readXLSFormulas(file, ncol(ans$dt))
-  rformulas<-readRFormulas(file, ncol(ans$dt))
-  ans<-set_Formulas(dt, xlsformulas=xlsformulas, rformulas=rformulas)
-  errors<-join_messages(errors, ans$errors, dt)
+  xlsformulas<-readXLSFormulas(file, ncol(dt))
+  rformulas<-readRFormulas(file, ncol(dt))
+  dt<-set_Formulas(dt, xlsformulas=xlsformulas, rformulas=rformulas)
 
-  errors<-join_messages(errors, ValidateCustom(dt), dt)
+  dt <- ValidateCustom(dt)
 
 #  browser()
-a
   vars_to_keep <- which(types == '0')
   for(varnr in rev(vars_to_keep))
   {
-    dt[,(varnr):=NULL]
+    if(sum(!is.na(dt[[varnr]]))==0) {
+      dt[,(varnr):=NULL]
+    }
   }
 
-  if(length(as.list(errors)))
-  {
-#    browser()
-    positions<-match(names(errors), colnames(dt))
-    positions<-unclass(na.omit(positions))
-    warning(paste0('Loading failed with the following reasons: \n',
-                  paste0(seq_along(errors), '. Ad ', colnames(dt)[positions], ": ", as.list(errors)[colnames(dt)[positions] ], collapse ='\n') ))
-  }
-  return(list(dt=dt, errors=as.list(errors), warnings=as.list(mywarnings)))
+  return(dt)
 }
 
 
@@ -164,6 +149,7 @@ set_apply_labels<-function(dt, labels, vartypes, flagUseTaggedNA=TRUE, in_varnam
     origvar <- dt[[varnr]]
     var <- origvar #copy
 
+
     if (length(myNAlevels)>0){
       var[var %in% myNAlevels] <- NA
     }
@@ -178,6 +164,8 @@ set_apply_labels<-function(dt, labels, vartypes, flagUseTaggedNA=TRUE, in_varnam
         , error=function(e){return(NULL)})
       if (!is.null(varDate))
       {
+        copy_var_attributes(var, varDate)
+
         return(list(var=varDate, NAlabels=myNAlabels, NAlevels=myNAlevels, levels=mylevels, labels=mylabels ))
       }
     }
@@ -194,12 +182,10 @@ set_apply_labels<-function(dt, labels, vartypes, flagUseTaggedNA=TRUE, in_varnam
     {
       if (vartypes[[varnr]]=='D')
       {
-        add_msg(varname = colnames(dt)[[varnr]], message =
-                  paste0("Cannot convert variable ",
-                         nice_varname(dt, varnr),
-                         " to Date."),
-                msg_list = errors )
-        return(list(var=var, NAlabels=myNAlabels, NAlevels=myNAlevels, levels=mylevels, labels=mylabels ))
+        var<-add_msg_var(var = colnames(dt)[[varnr]], message =
+                           paste0("cannot be converted to Date."),
+                         flag_show_type=TRUE, flag_error=TRUE )
+                return(list(var=var, NAlabels=myNAlabels, NAlevels=myNAlevels, levels=mylevels, labels=mylabels ))
       }
 
       #Variable is a character string
@@ -207,44 +193,42 @@ set_apply_labels<-function(dt, labels, vartypes, flagUseTaggedNA=TRUE, in_varnam
       {
         if(flag_keep_tagged_na)
         {
-          msg<-paste0("Warning: Character vector variable \"", varnames[[varnr]], "\" doesn't support tagged NA. Keeping all tagged NA as non-missing text labels. ")
-          add_msg(colnames(dt)[[varnr]], msg, mywarnings)
+          msg<-paste0("doesn't support tagged NA. Keeping all tagged NA as non-missing text labels")
           var <- origvar
+          copy_var_attributes(origvar, var)
+
         } else {
-          msg<-paste0("Warning: Character vector variable \"", varnames[[varnr]], "\" doesn't support tagged NA. Removing all tagged NA into plain NA. Consider replacing the vector into numeric")
-          add_msg(colnames(dt)[[varnr]], msg, mywarnings)
-          warning(msg)
+          msg<-paste0("doesn't support tagged NA. Removing all tagged NA into plain NA. Consider replacing the vector into numeric")
         }
+        var<-add_msg_var(var, msg, flag_show_type=TRUE, flag_warning=TRUE)
       }
       return(list(var=var, NAlabels=character(0), NAlevels=character(0), levels=mylevels, labels=mylabels ))
     }
+    copy_var_attributes(var, numvar)
 
     if (vartypes[[varnr]]=='D')
     {
       if (length(myNAlabels)>0)
       {
-        msg<-paste0('Warning: Date variable ',
-                    nice_varname(dt, varnr),
-                    " doesn't support tagged NA. Removing all tagged NA into plain NA.")
-        add_msg(varname = colnames(dt)[[varnr]],
+        msg<-paste0("doesn't support tagged NA. Replacing all tagged NA with plain NA")
+        numvar<-add_msg_var(numvar,
                 message = msg,
-                msg_list = mywarnings)
-        warning(msg)
+                flag_show_type=TRUE, flag_warning=TRUE)
       }
       varDate<-tryCatch(
         as.Date(numvar,origin="1899-12-30") #We assume Excel for Windows format
         , error=function(e){
-          add_msg(varname = colnames(dt)[[varnr]],
-                  message = paste0("Cannot convert the ",
-                                   nice_varname(dt, varnr),
-                                   " variable to date"),
-                  msg_list = errors );
-          return(NULL)
+          newvar<-add_msg_var(var,
+                  message = paste0("cannot be converted into date"),
+                  flag_show_type=TRUE, flag_warning=TRUE);
+          copy_var_attributes(origvar, newvar)
+
+          return(list(newvar))
         }
       )
-      if (!is.null(varDate))
+      if (!is.list(varDate))
       {
-        return(list(var=NA, NAlabels=myNAlabels, NAlevels=myNAlevels, levels=mylevels, labels=mylabels ))
+        return(list(var=varDate[[1]], NAlabels=myNAlabels, NAlevels=myNAlevels, levels=mylevels, labels=mylabels ))
         #        return(list(var=varDate, NAlabels=myNAlabels, NAlevels=myNAtags, levels=mylevels, labels=mylabels ))
       }
     }
@@ -262,13 +246,11 @@ set_apply_labels<-function(dt, labels, vartypes, flagUseTaggedNA=TRUE, in_varnam
 
     #Now we know, we have a proper numeric number.
     if ((length(myNAlevels)>0) && vartypes[[varnr]] %in% c('I','F') && flagUseTaggedNA){
-      msg<-paste0('Integer variable ',
-                  nice_varname(dt, varnr),
-                  ' don\'t support tagged NAs. Promoting integer into the numeric. ')
+      msg<-paste0("doesn't support tagged NAs. Promoting integer into the numeric")
       warning(msg)
-      add_msg(varname = colnames(dt)[[varnr]],
+      numvar<-add_msg_var(numvar,
               message = msg,
-              msg_list = mywarnings)
+              flag_show_type=TRUE, flag_warning=TRUE)
       forceNumeric=TRUE
     } else {
       forceNumeric=FALSE
@@ -278,15 +260,16 @@ set_apply_labels<-function(dt, labels, vartypes, flagUseTaggedNA=TRUE, in_varnam
 
     if (((length(myNAlevels)==0) || flagUseTaggedNA) && !forceNumeric && vartypes[[varnr]] %in% c('I','F'))
     {
-      numvar <- as.integer(numvar)
-      return(list(var=numvar, NAlabels=list(), NAlevels=list(), levels=mylevels, labels=mylabels ))
+      newnumvar <- as.integer(numvar)
+      copy_var_attributes(numvar, newnumvar)
+      return(list(var=newnumvar, NAlabels=list(), NAlevels=list(), levels=mylevels, labels=mylabels ))
 
     }
     if (length(levels)==0 && length(NAlevels)>0)
     {
-      add_msg(varname = colnames(dt)[[varnr]],
-              message = paste0("Numerical type doesn't support named missings. Discarding the names for the missings (but leaving the attributes and tagged na)"),
-              msg_list = errors );
+      numvar <- add_msg(numvar,
+              message = paste0("doesn't support named missings. Discarding the names for the missings (but leaving the attributes and tagged na)"),
+              flag_show_type=TRUE, flag_warning=TRUE);
     }
 
     return(list(var=numvar, NAlabels=myNAlabels, NAlevels=myNAtags, levels=mylevels, labels=mylabels ))
@@ -305,6 +288,7 @@ set_apply_labels<-function(dt, labels, vartypes, flagUseTaggedNA=TRUE, in_varnam
         setattr(var, "labels", setNames(haven::tagged_na(NAlevels),NAlabels))
         varret <- var
       }
+      copy_var_attributes(var, varret)
       return(varret)
     }
 
@@ -314,10 +298,14 @@ set_apply_labels<-function(dt, labels, vartypes, flagUseTaggedNA=TRUE, in_varnam
       {
         if (all(sort(unique(var)) %in% levels))
         {
+          varret <- factor(var, levels=levels, labels=labels)
+          copy_var_attributes(var, varret)
+          setattr(varret, 'labels', NULL)
           return(factor(var, levels=levels, labels=labels))
         }
       }
       varret <- labelled::labelled(var, setNames(levels, labels))
+      copy_var_attributes(var, varret)
       return(varret)
     }
     return(var)
@@ -345,15 +333,11 @@ set_apply_labels<-function(dt, labels, vartypes, flagUseTaggedNA=TRUE, in_varnam
       if (varnames[[varnr]] %in% names(dt))
       {
         newname <- make.un-ique(c(names(dt), varnames[[varnr]]))[[length(dt)+1]]
-        add_msg(varname = colnames(dt)[[varnr]],
-                message = paste0('Duplicate variable name detected "',
-                                 varnames[[varnr]],
-                                 '" for variable nr ',
-                                 varnr,
-                                 ". Renaming it into '",
+        add_msg_var(var,
+                message = paste0('has duplicated name; it will be renamed into `',
                                  newname,
-                                 "'"),
-                msg_list = errors )
+                                 "`"),
+                flag_show_varnr=TRUE )
 
       } else {
         newname <- varnames[[varnr]]

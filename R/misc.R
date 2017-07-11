@@ -6,7 +6,7 @@ format_case_list<-function(case_names, flag_quote=TRUE)
   }
   if (flag_quote)
   {
-    case_names <- paste0("'", case_names, "'")
+    case_names <- paste0("`", case_names, "`")
   }
   if(length(case_names)==1)
   {
@@ -35,7 +35,7 @@ format_values<-function(values)
 
 format_values.character<-function(values)
 {
-  return(paste0('"', values, '"'))
+  return(paste0('`', values, '`'))
 }
 
 format_values.integer<-function(values)
@@ -280,28 +280,29 @@ class2vartype<-function(var)
 {
   classes_sorted <- paste0(sort(class(var)), collapse=',')
 
-  if(classes_sorted == 'factor')
+  if(classes_sorted %in%  c('factor', 'factor,ordered'))
   {
-    return('F')
+    ret<-'F'
   } else if(classes_sorted == 'labelled')
   {
-    return('L')
+    ret<-'L'
   } else if(classes_sorted == 'integer')
   {
-    return('I')
+    ret<-'I'
   } else if(classes_sorted == 'numeric')
   {
-    return('N')
-  } else if(classes_sorted == 'Date')
+    ret<-'N'
+  } else if(classes_sorted %in% c('Date', "POSIXct,POSIXt"))
   {
-    return('D')
+    ret<-'D'
   } else if(classes_sorted == 'character')
   {
-    return('S')
+    ret<-'S'
   } else if(classes_sorted == 'logical')
   {
-    return('0')
+    ret<-'0'
   } else {
+    browser()
     return('')
 #    stop(paste0("Unkown class: ", classes_sorted))
 #    browser()
@@ -333,29 +334,84 @@ compareNA <- function(v1,v2) {
   return(diff)
 }
 
-#It uses implicitely errors and dt variable
-add_error<-function(varnr, message)
-{
-  varname <- colnames(dt)[[varnr]]
-  tmp<-errors[[varname]]
-  if(!is.null(tmp))
-  {
-    errors[[varname]] <<- paste0(errors[[varname]], " ", message)
-  } else {
-    errors[[varname]] <<- message
+errors <- new.env()
+warnings <- new.env()
+
+pack_flags<-function(flag_show_formula=FALSE, flag_show_type=FALSE, flag_show_varnr=FALSE) {
+  flags<-as.integer(0)
+
+  if(flag_show_type){
+    flags<-bitwOr(flags,1)
+  }
+  if(flag_show_varnr){
+    flags<-bitwOr(flags,2)
+  }
+  if(flag_show_formula){
+    flags<-bitwOr(flags,4)
+  }
+
+  return(flags)
+}
+
+does_show_factory<-function(pos) {
+  return(function(var) {
+    flags<-attr(var, 'warnings_context')
+    if(is.null(flags)) {
+      return(FALSE)
+    } else {
+      return(as.logical(bitwAnd(as.integer(flags),bitwShiftL(1,pos-1))))
+    }
+  })
+}
+
+does_show_formula<-does_show_factory(3)
+does_show_type<-does_show_factory(1)
+does_show_varnr<-does_show_factory(2)
+
+
+add_msg<-function(dt, varname, message, flag_error, flag_warning=TRUE, ...) {
+  msg <- attr(dt[[varname]], 'warnings');
+  setattr(dt[[varname]], 'warnings', c(msg, message))
+  ctx <- attr(dt[[varname]], 'warnings_context')
+  if(is.null(ctx)) {
+    ctx <- 0
+  }
+  ctx <- bitwOr(ctx, pack_flags(...))
+  setattr(dt[[varname]],'warnings_context',  ctx)
+}
+
+add_msg_var<-function(var, message, flag_error, flag_warning=TRUE, ...) {
+  msg <- attr(var, 'warnings');
+  setattr(var, 'warnings', c(msg, message))
+  ctx <- attr(var, 'warnings_context')
+  if(is.null(ctx)) {
+    ctx <- 0
+  }
+  ctx <- bitwOr(ctx, pack_flags(...))
+  setattr(var,'warnings_context',  ctx)
+  return(var)
+}
+
+copy_dt_attributes<-function(dt_source, dt_dest, which_colnames='') {
+  copy_attributes<-function(dt_source, dt_dest, colname) {
+    a <- attributes(dt_source[[colname]])
+    attrnames<-setdiff(names(a),c('class','dim', 'dimnames','names', 'levels', 'labels'))
+    for(aname in attrnames) {
+      setattr(dt_dest[[colname]], aname, a[[aname]])
+    }
+  }
+  if(which_colnames==''){
+    which_colnames<- intersect(colnames(dt_dest), colnames(dt_source))
+  }
+  for (varname in which_colnames) {
+    copy_attributes(dt_source, dt_dest, varname)
   }
 }
 
-
-#It uses implicitely mywarnings and dt variable
-add_msg<-function(varname, message, msg_list)
-{
-  tmp<-msg_list[[varname]]
-  if(!is.null(tmp))
-  {
-    msg_list[[varname]] <- paste0(trimws(msg_list[[varname]]), " ", message)
-  } else {
-    msg_list[[varname]] <- message
+copy_var_attributes<-function(var_source, var_dest) {
+  a <- attributes(var_source)
+  attrnames<-setdiff(names(a),c('class','dim', 'dimnames','names', 'levels', 'labels'))
+  for(aname in attrnames) {
+    setattr(var_dest, aname, a[[aname]])
   }
 }
-

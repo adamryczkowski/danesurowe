@@ -109,7 +109,9 @@ df_difference<-function(df1, df2, df1_key=NULL, df2_key=NULL, columns_to_ignore=
                         diff_rownames = common_rownames,
                         diff_colnames = common_colnames,
                         df1_rownames = df1_rownames,
-                        df2_rownames = df2_rownames
+                        df2_rownames = df2_rownames,
+  											df1=df1,
+  											df2=df2
                         )
 
 
@@ -131,23 +133,23 @@ DiffMatrix<-function(df1_sorted, df2_sorted, col_names){
     var1<-df1_sorted[[colname]]
     var2<-df2_sorted[[colname]]
     ans <- compare_two_variables(var1, var2)
-    comp_var <- ans$comp_var
+    compvar <- ans$compvar
     var1 <- ans$var1
     var2 <- ans$var2
 
-    if(sum(is.na(comp_var)>0))
+    if(sum(is.na(compvar)>0))
       browser()
     if(length(diffdb)==0)  {
-      diffdb <- data.table(var=comp_var)
+      diffdb <- data.table(var=compvar)
       data.table::setnames(diffdb, 'var', colname)
       dt_out1 <- data.table(var=var1)
       data.table::setnames(dt_out1, 'var', colname)
       dt_out2 <- data.table(var=var2)
       data.table::setnames(dt_out2, 'var', colname)
     } else {
-      diffdb[,(colname):=comp_var]
-      dt_out1[, (colname):=var1]
-      dt_out2[, (colname):=var2]
+    	set(diffdb, i=NULL, j=colname, value=compvar)
+      set(dt_out1, i=NULL, j=colname, value=var1)
+      set(dt_out2, i=NULL, j=colname, value=var2)
     }
 
   }
@@ -226,24 +228,24 @@ compare_two_variables<-function(var1, var2)
         }
       } else {
         if(sum(!is.na(var2))==0)  {
-          var2<-as.character(var2)
-        } else {
           browser()
+        } else {
+          var2<-as.character(var2)
         }
       }
     } else if (classes_sorted=='logical|numeric')  {
       if(class(var1)=='logical') {
         if(sum(!is.na(var1))==0)  {
-          var1<-suppressWarnings(as.numeric(var1))
-        } else {
           browser()
+        } else {
+          var1<-suppressWarnings(as.numeric(var1))
         }
       } else {
         if(sum(!is.na(var2))==0)
         {
-          var2<-suppressWarnings(as.numeric(var2))
-        } else {
           browser()
+        } else {
+          var2<-suppressWarnings(as.numeric(var2))
         }
       }
     } else {
@@ -540,20 +542,26 @@ update_diffdt<-function(diffdb, df1, df2)
 {
   if(!'value_int' %in% colnames(diffdb))
   {
-    diffdb[,value_int:=integer(0)]
-    diffdb[,value_num:=numeric(0)]
-    diffdb[,value_char:=character(0)]
-    diffdb[,status:=integer(0)]
+  	set(diffdb, i=NULL, j='value_int', value=integer(0))
+  	set(diffdb, i=NULL, j='value_num', value=numeric(0))
+  	set(diffdb, i=NULL, j='value_char', value=character(0))
+  	set(diffdb, i=NULL, j='status', value=integer(0))
+#  	diffdb[,value_int:=integer(0)]
+#    diffdb[,value_num:=numeric(0)]
+#    diffdb[,value_char:=character(0)]
+#    diffdb[,status:=integer(0)]
   }
 
-  for (i in seq(nrow(diffdb)))
-  {
-    status <- diffdb[['status']][[i]]
-    if (is.na(status))
-    {
-      update_diffdt_row(diffrow = i, df1 = df1, df2 = df2, diffdb = diffdb)
-    }
-  }
+	if(nrow(diffdb)>0) {
+		for (i in seq(nrow(diffdb)))
+		{
+			status <- diffdb[['status']][[i]]
+			if (is.na(status))
+			{
+				update_diffdt_row(diffrow = i, df1 = df1, df2 = df2, diffdb = diffdb)
+			}
+		}
+	}
   return(diffdb)
 }
 
@@ -699,7 +707,7 @@ update_diffdt_row<-function(diffrow, df1, df2, diffdb)
   var2<-df2[[ varname ]]
   val1<-var1[[ full_row$rownr1 ]]
   val2<-var2[[ full_row$rownr2 ]]
-  var2_type<-diffdb[diffrow, df2_data_type]
+  var2_type<-diffdb[diffrow, 'df2_data_type'][[1]]
 
 #  cat(paste0(diffrow,'\n'))
 #  if(diffrow==873) browser()
@@ -715,20 +723,24 @@ update_diffdt_row<-function(diffrow, df1, df2, diffdb)
                         S='value_char',
                         'NULL'
     )
-    if(value_var=='NULL') browser()
+    if(is.null(value_var)) browser()
     if (var2_type != 'D' || is.na(ans$value)) {
-      diffdb[diffrow, (value_var):=ans$value]
+    	set(diffdb, i=diffrow, j=value_var, value=ans$value)
     } else {
       if (class(ans$value) != 'Date') {
-        browser()
+      	if('POSIXct' %in% class(ans$value)) {
+      		ans$value <- as.Date(ans$value)
+      	} else {
+      		browser()
+      	}
       }
-      diffdb[diffrow, (value_var):=as.numeric(ans$value - as.Date(0, origin="1899-12-30", tz='UTC'))]
+    	set(diffdb, i=diffrow, j=value_var, value=as.numeric(ans$value - as.Date(0, origin="1899-12-30", tz='UTC')))
     }
   }
-  diffdb[diffrow, status:=ans$status]
+  set(diffdb, i=diffrow, j='status', value=ans$status)
 }
 
-create_diffdb<-function(diff_matrix, diff_rownames, diff_colnames, df1_rownames, df2_rownames)
+create_diffdb<-function(diff_matrix, diff_rownames, diff_colnames, df1_rownames, df2_rownames, df1, df2)
 {
   #Returns a letter that encodes data type.
   get_data_type<-function(varname, df)  {
@@ -756,6 +768,7 @@ create_diffdb<-function(diff_matrix, diff_rownames, diff_colnames, df1_rownames,
   }
 
   get_label<-function(rowcol, dt, rownames)  {
+#  	cat(paste0(rowcol,'\n'))
     rowname<-diff_rownames[[rowcol[[1]] ]]
     colname<-diff_colnames[[rowcol[[2]] ]]
     var<-dt[[colname]]
@@ -795,5 +808,5 @@ create_diffdb<-function(diff_matrix, diff_rownames, diff_colnames, df1_rownames,
     df2_label=as.character(plyr::alply(mismatch_ind,1, get_label, dt=df2, rownames=df2_rownames))
   )
 
-  row_db
+  return(row_db)
 }
