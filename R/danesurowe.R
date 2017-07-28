@@ -88,12 +88,16 @@ IsRequired_1<-function(var)
 IsRequired<-Vectorize(IsRequired_1)
 
 GetFOB<-function(var, flag_recalculate_uniques=FALSE) {
+  if(is.null(var)) {
+    browser()
+  }
   if(flag_recalculate_uniques) {
     count<-length(unique(var))
     if(count==2) {
       data.table::setattr(var, 'f.o.b', 3)
       return(3)
     } else if (count<=1) {
+      browser()
       data.table::setattr(var, 'f.o.b', -1)
       return(-1)
     }
