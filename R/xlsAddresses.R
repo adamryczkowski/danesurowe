@@ -88,7 +88,7 @@ readVariableGroups<-function(file, dt)
   whichNA<-match(TRUE, is.na(VariableGroupNames))
   if (is.na(whichNA))
   {
-    whichNA<-nrow(VariableGroupNames)
+    whichNA<-length(VariableGroupNames)
   }
   VariableGroupNames<-VariableGroupNames[seq(2,whichNA-1)]
 
@@ -97,12 +97,14 @@ readVariableGroups<-function(file, dt)
   rng<-readxl::read_excel(path=address$file, sheet=address$sheetname, col_names = FALSE)
 
   groups<-list()
-  cols<-rng[2:nrow(rng),address$colnr:ncol(rng)]
-  for(i in seq_along(VariableGroupNames))
-  {
-    colnrs<-plyr::llply(cols,function(col){which(col==i)})
-    unique_colnrs<-Reduce(union, colnrs, integer(0))
-    groups[[VariableGroupNames[[i]]]]<-names(dt)[unique_colnrs]
+  if(ncol(rng)>=address$colnr) {
+  	cols<-rng[2:nrow(rng),address$colnr:ncol(rng)]
+  	for(i in seq_along(VariableGroupNames))
+  	{
+  		colnrs<-plyr::llply(cols,function(col){which(col==i)})
+  		unique_colnrs<-Reduce(union, colnrs, integer(0))
+  		groups[[VariableGroupNames[[i]]]]<-names(dt)[unique_colnrs]
+  	}
   }
   setattr(dt, 'variablegroups', groups)
   return(groups)

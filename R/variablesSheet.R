@@ -7,7 +7,12 @@ readMeasureAndUnits<-function(file, dt)
 
   address<-danesurowe::getNamedRange(file, getOption('rng_Units'))
   rng<-readxl::read_excel(path=address$file, sheet=address$sheetname, col_names = FALSE)
-  units<-rng[[address$colnr]][(address$rownr+2):(address$rownr+ncol(dt))]
+  if (ncol(rng)>=address$colnr) {
+  	units<-rng[[address$colnr]][(address$rownr+2):(address$rownr+ncol(dt))]
+  } else {
+  	units<-rep(NA, times=length(measures))
+  }
+
 
   for (varnr in seq_along(measures))
   {

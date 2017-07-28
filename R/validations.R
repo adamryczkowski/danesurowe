@@ -43,8 +43,8 @@ fn_validate_ForceIntegers<-function(varnr, dt)
 
 fn_validate_TheoreticalMin<-function(varnr, dt)
 {
-  #  cat(paste0(varnr,'\n'))
-#  if(varnr==11) browser();
+ #   cat(paste0(varnr,'\n'))
+#  if(varnr==6) browser();
   var<-dt[[varnr]]
   vartype <- attr(var,'measure_type')
   if (is.null(vartype))
@@ -106,9 +106,9 @@ fn_validate_TheoreticalMin<-function(varnr, dt)
           " with value greater than theoretical max: ",
           format_case_list(cases, FALSE))
       }
+      add_msg(dt=dt, varname = colnames(dt)[[varnr]],
+      				message = error)
     }
-    add_msg(dt=dt, varname = colnames(dt)[[varnr]],
-            message = error)
   }
 }
 
@@ -316,7 +316,7 @@ fn_validate_Formulas<-function(varnr, dt)
 {
   #  if(varnr==12)
   #    browser()
-  cat(paste0(varnr,'\n'))
+#  cat(paste0(varnr,'\n'))
 #  if (varnr==19) browser();
   #  if (varnr==4) browser();
   var<-dt[[varnr]]

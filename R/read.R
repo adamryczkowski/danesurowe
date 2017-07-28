@@ -4,8 +4,13 @@
 #' @export
 
 getVersion<-function(file) {
-  addr<-danesurowe::getNamedRange(file, getOption('rng_Version'))
-  val<-readSingleCellAtAddress(addr)
+	ans<-tryCatch(addr<-danesurowe::getNamedRange(file, getOption('rng_Version')),
+								error=function(e) e)
+  if('error' %in% class(ans)) {
+  	val<-3
+  }else{
+  	val<-suppressWarnings(readSingleCellAtAddress(addr))
+  }
   return(as.numeric(val))
 
 }
@@ -54,6 +59,7 @@ readDaneSurowe3 <- function(file) {
   {
     dt[,(i):=NULL]
   }
+  setattr(dt,'path', file)
   return(dt)
 }
 
@@ -65,7 +71,7 @@ readDaneSurowe4 <- function(file, flag_keep_tagged_na = FALSE) {
   labels<-readLabelSheet4(file, ncol(ans$dt))
 
   types<-readTypes(file, ncol(ans$dt))
-
+#	browser()
   ans<-set_apply_labels(dt = ans$dt, labels=labels, vartypes = types, flag_keep_tagged_na=flag_keep_tagged_na)
   dt<-ans$dt
 
@@ -73,7 +79,6 @@ readDaneSurowe4 <- function(file, flag_keep_tagged_na = FALSE) {
   mywarnings<-ans$warnings
 
   ans<-readMinMax(file, dt)
-
   dt<-set_TheoreticalMinMax(dt, ans$mins, ans$maxs)
 
   forceIntegers<-readForceInteger(file, ncol(dt))
@@ -103,6 +108,7 @@ readDaneSurowe4 <- function(file, flag_keep_tagged_na = FALSE) {
       dt[,(varnr):=NULL]
     }
   }
+  setattr(dt,'path', file)
 
   return(dt)
 }
@@ -247,7 +253,7 @@ set_apply_labels<-function(dt, labels, vartypes, flagUseTaggedNA=TRUE, in_varnam
     #Now we know, we have a proper numeric number.
     if ((length(myNAlevels)>0) && vartypes[[varnr]] %in% c('I','F') && flagUseTaggedNA){
       msg<-paste0("doesn't support tagged NAs. Promoting integer into the numeric")
-      warning(msg)
+#      warning(msg)
       numvar<-add_msg_var(numvar,
               message = msg,
               flag_show_type=TRUE, flag_warning=TRUE)
@@ -313,9 +319,9 @@ set_apply_labels<-function(dt, labels, vartypes, flagUseTaggedNA=TRUE, in_varnam
 
   fn<-function(varnr)
   {
-    #  if (varnr==7) browser();
+#    if (varnr==568) browser();
 
-    #    cat(paste0(varnr,'\n'))
+#    cat(paste0(varnr,'\n'))
 
     info<-fn_baseclass(varnr)
     var<-do.call(fn_labelled, info)

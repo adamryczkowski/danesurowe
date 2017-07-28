@@ -62,9 +62,22 @@ IsLimitedToLabels<-function(var)
   }
 }
 
-IsRequired<-function(var)
+GetDBName<-function(db, default=NULL){
+  label <- attr(db, 'label')
+  if (is.null(label)) {
+    if(is.null(default)) {
+      label<-deparse(substitute(db))
+    } else {
+      label <- default
+    }
+  }
+  return(label)
+}
+
+
+IsRequired_1<-function(var)
 {
-  flag<-attr(var2,'required')
+  flag<-attr(var,'required')
   if (is.null(flag)){
     return(FALSE)
   } else {
@@ -72,15 +85,29 @@ IsRequired<-function(var)
   }
 }
 
-GetFOB<-function(var) {
+IsRequired<-Vectorize(IsRequired_1)
+
+GetFOB<-function(var, flag_recalculate_uniques=FALSE) {
+  if(flag_recalculate_uniques) {
+    count<-length(unique(var))
+    if(count==2) {
+      data.table::setattr(var, 'f.o.b', 3)
+      return(3)
+    } else if (count<=1) {
+      data.table::setattr(var, 'f.o.b', -1)
+      return(-1)
+    }
+  } else {
+    count<-NA
+  }
   if(is.null(attr(var, 'f.o.b'))) {
     typ <- class2vartype(var)
     if(typ %in% c('F', 'L')) {
       labs <- GetLabels(var)
-      if(length(labs)==2) {
+      if(min(length(labs),count, na.rm=TRUE)==2) {
         data.table::setattr(var, 'f.o.b', 3)
       } else {
-        if (AreLabelsRequired(var)) {
+        if (IsLimitedToLabels_1(var)) {
           data.table::setattr(var, 'f.o.b', 1)
         } else {
           data.table::setattr(var, 'f.o.b', 2)
@@ -105,19 +132,50 @@ GetFOB<-function(var) {
   return(attr(var, 'f.o.b'))
 }
 
-AreLabelsRequired<-function(var) {
-  val<-attr(var,'required')
+IsLimitedToLabels_1<-function(var) {
+  val<-attr(var,'limit_to_labels')
   typ <- class2vartype(var)
   if (typ == 'F') {
     return(TRUE)
   } else {
     if(is.null(val)){
-      return(val)
-    } else {
       return(FALSE)
+    } else {
+      return(val)
     }
   }
 }
+
+IsLimitedToLabels<-Vectorize(IsLimitedToLabels_1)
+
+GetLabelsString_1<-function(var) {
+  levels<-GetLevels(var)
+  if(length(levels)>0) {
+    levels<-levels[order(levels)]
+    levels_str <- paste0(format_values(levels), '="', names(levels),'"', collapse = ';')
+  } else {
+    levels_str<-character(0)
+  }
+
+  NAlevels<-GetNALevels(var)
+  if(length(NAlevels)>0) {
+    NAlevels<-NAlevels[order(names(NAlevels))]
+    levelsNA_str <- paste0('NA(', NAlevels, ')="', names(levels),'"', collapse = ';')
+  } else{
+    levelsNA_str<-character(0)
+  }
+
+
+
+  if(length(levels_str)>0 && length(levelsNA_str)>0) {
+    znak<-';'
+  } else {
+    znak<-''
+  }
+ return(paste0('', levels_str, znak, levelsNA_str))
+}
+
+GetLabelsString<-Vectorize(GetLabelsString_1)
 
 GetLevels<-function(var)
 {
@@ -172,10 +230,13 @@ GetNALabels<-function(var)
   }
 }
 
-GetDBName<-function(db){
-  label <- attr(db, 'label')
-  if (is.null(label)) {
-    label<-deparse(substitute(db))
+GetVarLabel<-function(dt, varname, quote_varname='', quote_varlabel='') {
+  var<-dt[[varname]]
+  mylabel<-attr(var, 'label')
+  if(is.null(mylabel)) {
+    return(paste0(quote_varname, varname, quote_varname))
+  } else {
+    return(paste0(quote_varlabel, mylabel, quote_varlabel))
   }
 }
 
@@ -233,7 +294,7 @@ GetLabelToValue<-function(var, value)
   }
 }
 
-GetExcelFormula<-function(var) {
+GetExcelFormula_1<-function(var) {
   frm <- attr(var, 'xls_formula')
   if(is.null(frm)){
     return(NA)
@@ -242,14 +303,18 @@ GetExcelFormula<-function(var) {
   }
 }
 
-GetRFormula<-function(var) {
+GetExcelFormula<-Vectorize(GetExcelFormula_1)
+
+GetRFormula_1<-function(var) {
   frm <- attr(var, 'r_formula')
   if(is.null(frm)){
-    return(NA)
+    return(NA_character_)
   } else {
     return(frm)
   }
 }
+
+GetRFormula<-Vectorize(GetRFormula_1)
 
 #Returns list of symbols mentioned by the formula
 GetRFormulaSymbols<-function(var) {
@@ -260,23 +325,46 @@ GetRFormulaSymbols<-function(var) {
   return(symbole)
 }
 
-GetTheoreticalMin<-function(var) {
+GetTheoreticalMin_1<-function(var) {
   val <- attr(var, 'theoretical_min')
   if(is.null(val)){
-    return(NA)
+    if(is.integer(var)) {
+      return(NA_integer_)
+    } else {
+      return(NA_real_)
+    }
   } else {
     return(val)
   }
 }
 
-GetTheoreticalMax<-function(var) {
-  val <- attr(var, 'theoretical_max')
+GetTheoreticalMin<-Vectorize(GetTheoreticalMin_1)
+
+AreIntegersForced_1<-function(var){
+  val <- attr(var, 'force_integers')
   if(is.null(val)){
-    return(NA)
+    return(as.logical(NA))
   } else {
     return(val)
   }
 }
+
+AreIntegersForced<-Vectorize(AreIntegersForced_1)
+
+GetTheoreticalMax_1<-function(var) {
+  val <- attr(var, 'theoretical_max')
+  if(is.null(val)){
+    if(is.integer(var)) {
+      return(NA_integer_)
+    } else {
+      return(NA_real_)
+    }
+  } else {
+    return(val)
+  }
+}
+
+GetTheoreticalMax<-Vectorize(GetTheoreticalMax_1)
 
 IsVariableValidation<-function(dt, varnr) {
   varname <- colnames(dt)[[varnr]]
