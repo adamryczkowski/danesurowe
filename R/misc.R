@@ -864,21 +864,23 @@ nice_class_names_1<-function(var, language=c('EN','PL')) {
   class_string<-paste0(sort(myclasses), collapse = ',')
   unknown_myclasses<-myclasses[setdiff(seq_along(myclasses), which_known_myclasses)]
 
-  if(class_string %in% dic){
-    out <- names(dic)[dic==class_string]
-  } else if('labelled' %in% class(var)) {
-    fob<-GetFOB(var)
-    if(fob==2) {
-      out <- names(dic)[dic=='factor,ordered']
-    } else if (fob==1) {
-      out <- names(dic)[dic=='factor']
-    } else if (fob==3) {
-      out <- names(dic)[dic=='logical']
+  fob<-GetFOB(var)
+  if(fob==3) {
+    out <- names(dic)[dic=='logical']
+  } else {
+    if(class_string %in% dic){
+      out <- names(dic)[dic==class_string]
+    } else if('labelled' %in% class(var)) {
+      if(fob==2) {
+        out <- names(dic)[dic=='factor,ordered']
+      } else if (fob==1) {
+        out <- names(dic)[dic=='factor']
+      } else {
+        out <- class_string
+      }
     } else {
       out <- class_string
     }
-  } else {
-    out <- class_string
   }
 
   if(length(unknown_myclasses)>0) {

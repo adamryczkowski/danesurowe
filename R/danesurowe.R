@@ -97,7 +97,6 @@ GetFOB<-function(var, flag_recalculate_uniques=FALSE) {
       data.table::setattr(var, 'f.o.b', 3)
       return(3)
     } else if (count<=1) {
-      browser()
       data.table::setattr(var, 'f.o.b', -1)
       return(-1)
     }
@@ -112,7 +111,11 @@ GetFOB<-function(var, flag_recalculate_uniques=FALSE) {
         data.table::setattr(var, 'f.o.b', 3)
       } else {
         if (IsLimitedToLabels_1(var)) {
-          data.table::setattr(var, 'f.o.b', 1)
+          if('ordered' %in% class(var)) {
+            data.table::setattr(var, 'f.o.b', 2)
+          } else {
+            data.table::setattr(var, 'f.o.b', 1)
+          }
         } else {
           data.table::setattr(var, 'f.o.b', 2)
         }
@@ -281,9 +284,9 @@ GetLabelToValue<-function(var, value)
     {
       return(NA)
     } else {
-      if (val %in% seq_along(labels(var)))
+      if (as.integer(value) %in% seq_along(attr(var, 'levels')))
       {
-        return(labels(var)[[val]])
+        return(attr(var, 'levels')[[as.integer(value)]])
       } else {
         return(character(0))
       }

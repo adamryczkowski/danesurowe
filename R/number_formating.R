@@ -47,23 +47,42 @@ report_values.numeric<-function(values, ...) {
   return(report_single_value(values, ...))
 }
 
-report_single_value_1<-function(value, n.significant=2, max_width=9) {
+report_proc<-function(value, n.significant=2, max_width=9, flag_use_small_mark=FALSE) {
+  return(ifelse(is.na(value), "―",
+              paste0(report_single_value(value*100, n.significant=n.significant,
+                                         max_width=max_width,
+                                         flag_use_small_mark=flag_use_small_mark),
+                     '%')
+  ))
+}
+
+report_single_value_1<-function(value, n.significant=2, max_width=9, flag_use_small_mark=FALSE) {
   if(is.na(value)) {
     return("―")
   }
   if(value==0) {
     return("0")
   }
+  if(flag_use_small_mark) {
+    small.mark = '\uA0'
+    small.interval = 5L
+  }else {
+    small.mark=''
+    small.interval = 5L
+  }
   ndigits <- as.integer(-log10(abs(value)) + n.significant)
   value<-round(value,ndigits)
   if(ndigits >= max_width + n.significant) {
     msg <- format(value, scientific = TRUE, nsmall = ndigits)
   } else if (ndigits > 0) {
-    msg <- format(value, scientific = FALSE, big.mark = '\uA0', nsmall = ndigits)
+    msg <- format(value, scientific = FALSE, big.mark = '\uA0', nsmall = ndigits,
+                  small.mark=small.mark, small.interval=small.interval)
   } else if (ndigits >= -max_width + n.significant) {
-    msg <- format(value, scientific = FALSE, big.mark = '\uA0')
+    msg <- format(value, scientific = FALSE, big.mark = '\uA0',
+                  small.mark=small.mark, small.interval=small.interval)
   } else {
-    msg <- format(value, scientific = TRUE)
+    msg <- format(value, scientific = TRUE,
+                  small.mark=small.mark, small.interval=small.interval)
   }
   return(msg)
 }
@@ -77,7 +96,7 @@ report_integer<-function(value) {
 }
 
 
-report_value_with_error_1<-function(value, ci, n.significant=2) {
+report_value_with_error_1<-function(value, ci, n.significant=2, flag_insert_error=TRUE) {
   if(is.na(value) || is.na(ci)) {
     return("―")
   }
@@ -91,11 +110,17 @@ report_value_with_error_1<-function(value, ci, n.significant=2) {
   ci <- round(ci,ndigits)
   value<-round(value,ndigits)
   if(ndigits > 0) {
-    msg <- paste0(format(value, scientific = FALSE, big.mark = '\uA0', nsmall = ndigits), '\uA0±\uA0',
+    msg <- paste0(format(value, scientific = FALSE, big.mark = '\uA0', nsmall = ndigits))
+    if(flag_insert_error) {
+      msg<-paste0(msg,'\uA0±\uA0',
                   format(ci, scientific = FALSE, nsmall=ndigits, big.mark = '\uA0'))
+    }
   } else {
-    msg <- paste0(format(value, scientific = FALSE, big.mark = '\uA0'), '\uA0±\uA0',
+    msg <- paste0(format(value, scientific = FALSE, big.mark = '\uA0'))
+    if(flag_insert_error) {
+      msg<-paste0(msg,'\uA0±\uA0',
                   format(ci, scientific = FALSE, big.mark = '\uA0'))
+    }
   }
   return(msg)
 }
