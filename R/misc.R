@@ -857,6 +857,19 @@ nice_class_names_1<-function(var, language=c('EN','PL')) {
     )
     prefix_unknown <- " (która dodatkowo jest "
     sufffix_unknown <- ")"
+  } else if (language=='') {
+    dic<-c('N'='numeric',
+           'I'='integer',
+           'T'='character',
+           'L'='logical',
+           'F'='factor',
+           'O'='factor,ordered',
+           #           'zmienna z etykietami wartości'='labelled',
+           'D'='Date',
+           'D'='POSIXlt,POSIXt'
+    )
+    prefix_unknown <- " ("
+    sufffix_unknown <- ")"
   }
   myclasses<-class(var)
   which_known_myclasses<-which(myclasses %in% known_classes)

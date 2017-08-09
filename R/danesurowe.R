@@ -87,56 +87,69 @@ IsRequired_1<-function(var)
 
 IsRequired<-Vectorize(IsRequired_1)
 
-GetFOB<-function(var, flag_recalculate_uniques=FALSE) {
+GetFOB<-function(var, flag_recalculate_uniques=FALSE, flag_update_dt=FALSE) {
   if(is.null(var)) {
     browser()
   }
   if(flag_recalculate_uniques) {
     count<-length(unique(var))
     if(count==2) {
-      data.table::setattr(var, 'f.o.b', 3)
+      if(flag_update_dt)
+        data.table::setattr(var, 'f.o.b', 3)
       return(3)
     } else if (count<=1) {
-      data.table::setattr(var, 'f.o.b', -1)
+      if(flag_update_dt)
+        data.table::setattr(var, 'f.o.b', -1)
       return(-1)
     }
   } else {
     count<-NA
   }
+  fob<-attr(var, 'f.o.b')
   if(is.null(attr(var, 'f.o.b'))) {
     typ <- class2vartype(var)
     if(typ %in% c('F', 'L')) {
       labs <- GetLabels(var)
       if(min(length(labs),count, na.rm=TRUE)==2) {
-        data.table::setattr(var, 'f.o.b', 3)
+        fob<-3
+#        data.table::setattr(var, 'f.o.b', 3)
       } else {
         if (IsLimitedToLabels_1(var)) {
           if('ordered' %in% class(var)) {
-            data.table::setattr(var, 'f.o.b', 2)
+            fob<-2
+#            data.table::setattr(var, 'f.o.b', 2)
           } else {
-            data.table::setattr(var, 'f.o.b', 1)
+            fob<-1
+#            data.table::setattr(var, 'f.o.b', 1)
           }
         } else {
-          data.table::setattr(var, 'f.o.b', 2)
+          fob<-2
+#          data.table::setattr(var, 'f.o.b', 2)
         }
       }
     } else if (typ %in% c('I', 'N', 'D') ) {
-      data.table::setattr(var, 'f.o.b', 0)
+      fob<-0
+#      data.table::setattr(var, 'f.o.b', 0)
     } else if (typ == '0') {
-      data.table::setattr(var, 'f.o.b', 3)
+      fob<-3
+#      data.table::setattr(var, 'f.o.b', 3)
     } else if (typ == 'S') {
       u <- unique(var)
       if (length(u)>2) {
-        data.table::setattr(var, 'f.o.b', 1)
+        fob<-1
+#        data.table::setattr(var, 'f.o.b', 1)
       } else {
-        data.table::setattr(var, 'f.o.b', 3)
+        fob<-3
+#        data.table::setattr(var, 'f.o.b', 3)
       }
     } else {
       browser()
     }
   }
-
-  return(attr(var, 'f.o.b'))
+  if(flag_update_dt){
+    data.table::setattr(var, 'f.o.b', fob)
+  }
+  return(fob)
 }
 
 IsLimitedToLabels_1<-function(var) {
@@ -237,7 +250,7 @@ GetNALabels<-function(var)
   }
 }
 
-GetVarLabel<-function(dt, varname, quote_varname='', quote_varlabel='') {
+GetVarLabel_1<-function(dt, varname, quote_varname='', quote_varlabel='') {
   var<-dt[[varname]]
   mylabel<-attr(var, 'label')
   if(is.null(mylabel)) {
@@ -246,6 +259,8 @@ GetVarLabel<-function(dt, varname, quote_varname='', quote_varlabel='') {
     return(paste0(quote_varlabel, mylabel, quote_varlabel))
   }
 }
+
+GetVarLabel<-Vectorize(GetVarLabel_1, vectorize.args = 'varname')
 
 # Returns label corresponding to the value in variable var, or returns character(0) if not found.
 # If possible, matches tagged_na.

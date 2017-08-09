@@ -47,12 +47,13 @@ report_values.numeric<-function(values, ...) {
   return(report_single_value(values, ...))
 }
 
-report_proc<-function(value, n.significant=2, max_width=9, flag_use_small_mark=FALSE) {
+report_proc<-function(value, n.significant=2, max_width=9, flag_use_small_mark=FALSE, flag_include_proc_sign=TRUE) {
   return(ifelse(is.na(value), "―",
               paste0(report_single_value(value*100, n.significant=n.significant,
                                          max_width=max_width,
-                                         flag_use_small_mark=flag_use_small_mark),
-                     '%')
+                                         flag_use_small_mark=flag_use_small_mark
+                                         ),
+                     if(flag_include_proc_sign) {'%'} else {''})
   ))
 }
 
