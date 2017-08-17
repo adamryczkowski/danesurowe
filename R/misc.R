@@ -815,11 +815,11 @@ copy_dt_attributes<-function(dt_source, dt_dest, which_colnames='') {
   }
 }
 
-copy_var_attributes<-function(var_source, var_dest) {
+copy_var_attributes<-function(var_source, var_dest_name, dt_dest) {
   a <- attributes(var_source)
   attrnames<-setdiff(names(a),c('class','dim', 'dimnames','names', 'levels', 'labels'))
   for(aname in attrnames) {
-    setattr(var_dest, aname, a[[aname]])
+    setattr(dt_dest[[var_dest_name]], aname, a[[aname]])
   }
 }
 
