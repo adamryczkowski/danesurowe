@@ -61,6 +61,13 @@ report_single_value_1<-function(value, n.significant=2, max_width=9, flag_use_sm
   if(is.na(value)) {
     return("―")
   }
+  if(is.infinite(value)) {
+    if(value>0) {
+      return("∞")
+    } else {
+      return("-∞")
+    }
+  }
   if(value==0) {
     return("0")
   }
