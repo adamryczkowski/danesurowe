@@ -197,7 +197,7 @@ GetLabelsString_1<-function(var) {
 
 GetLabelsString<-Vectorize(GetLabelsString_1)
 
-GetLevels<-function(var, flag_recalculate=FALSE)
+GetLevels<-function(var, flag_recalculate=TRUE)
 {
   if('factor' %in% class(var))
   {
@@ -214,7 +214,7 @@ GetLevels<-function(var, flag_recalculate=FALSE)
   }
 }
 
-GetLabels<-function(var, flag_recalculate=FALSE)
+GetLabels<-function(var, flag_recalculate=TRUE)
 {
   if('factor' %in% class(var))
   {
