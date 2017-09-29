@@ -1,6 +1,6 @@
 # name_of_datasets='datasets', name_of_variables='questions', name_of_variable='question',
 # name_of_cases='patients', name_of_case='patient', flag_include_rownumbers = TRUE )
-format_case_list<-function(case_names, flag_quote='`', all_cases=NULL, name_of_cases='cases')
+format_case_list<-function(case_names, flag_quote='`', all_cases=NULL, name_of_cases='cases', language='EN')
 {
 
   if(length(case_names)==0)
@@ -30,10 +30,16 @@ format_case_list<-function(case_names, flag_quote='`', all_cases=NULL, name_of_c
   }
   if(length(case_names)<=10)
   {
-
+    if(language=='EN') {
+      oraz=' and '
+    } else if (language=='PL') {
+      oraz=' i '
+    } else {
+      stop(paste0("Unsupported language ", language))
+    }
     return(paste0(
       paste0(head(case_names,length(case_names)-1), collapse = ', '),
-      " and ",
+      oraz,
       tail(case_names,1)
     ))
   }
@@ -649,12 +655,14 @@ nice_varname<-function(dt, varnr)
 vartype2class <- function(vartype)
 {
   return( switch(vartype,
-                           'F'='factor',
-                           'L'='labelled',
-                           'I'='integer',
-                           'N'='numeric',
-                           'D'='Date',
-                           'S'='character',
+                 'B'='logical',
+                 'D'='Date',
+                 'F'='factor',
+                 'I'='integer',
+                 'L'='labelled',
+                 'N'='numeric',
+                 'S'='character',
+                 'T'='POSIXct',
                            '##'
   )     )
 }
@@ -676,15 +684,22 @@ class2vartype<-function(var)
   } else if(classes_sorted == 'numeric')
   {
     return('N')
-  } else if(classes_sorted %in% c('Date', "POSIXct,POSIXt"))
+  } else if(classes_sorted %in% c('Date'))
   {
     return('D')
+  } else if(classes_sorted %in% c("POSIXct,POSIXt","POSIXlt,POSIXt"))
+  {
+    return('T')
   } else if(classes_sorted %in% c('character','character,labelled'))
   {
     return('S')
   } else if(classes_sorted %in% c('logical', 'labelled,logical'))
   {
-    return('0')
+    if(all(is.na(var))) {
+      return('0')
+    } else {
+      return('B')
+    }
   } else {
     browser()
     return('')
@@ -696,11 +711,13 @@ class2vartype<-function(var)
 is_vartype_numeric <- function(vartype)
 {
   return( switch(vartype,
+                 'B'=TRUE,
                  'F'=TRUE,
                  'L'=TRUE,
                  'I'=TRUE,
                  'N'=TRUE,
                  'D'=TRUE,
+                 'T'=TRUE,
                  'S'=FALSE,
                  '##'
   )     )
@@ -823,14 +840,20 @@ copy_var_attributes<-function(var_source, var_dest_name, dt_dest) {
   }
 }
 
-
+copy_obj_attributes<-function(obj_source, obj_dest) {
+  a <- attributes(obj_source)
+  attrnames<-setdiff(names(a),c('class','dim', 'dimnames','names', 'levels', 'labels'))
+  for(aname in attrnames) {
+    setattr(obj_dest, aname, a[[aname]])
+  }
+}
 
 nice_class_names_1<-function(var, language=c('EN','PL')) {
   if(length(language)!=1) {
     stop("You must specify language")
   }
   known_classes<-c('numeric','integer','character','logical','factor',
-                   'ordered','labelled','Date','POSIXlt','POSIXt')
+                   'ordered','labelled','Date','POSIXlt','POSIXt', 'POSIXct', 'logical')
   if(language=='EN') {
     dic<-c('real number'='numeric',
            'integer'='integer',
@@ -840,7 +863,9 @@ nice_class_names_1<-function(var, language=c('EN','PL')) {
            'ordered nominal'='factor,ordered',
            #           'labelled'='labelled',
            'date'='Date',
-           'POSIX date'='POSIXlt,POSIXt'
+           'time & date'='POSIXlt,POSIXt',
+           'time & date UTC'='POSIXct,POSIXt',
+           'logical'='logical'
     )
     prefix_unknown <- " (which is also "
     sufffix_unknown <- ")"
@@ -853,20 +878,25 @@ nice_class_names_1<-function(var, language=c('EN','PL')) {
            'zmienna porządkowa'='factor,ordered',
 #           'zmienna z etykietami wartości'='labelled',
            'data'='Date',
-           'data ze strefą czasową'='POSIXlt,POSIXt'
+           'czas ze strefą czasową'='POSIXlt,POSIXt',
+           'czas UTC'='POSIXct,POSIXt',
+           'tak/nie'='logical'
+
     )
     prefix_unknown <- " (która dodatkowo jest "
     sufffix_unknown <- ")"
   } else if (language=='') {
     dic<-c('N'='numeric',
            'I'='integer',
-           'T'='character',
+           'S'='character',
            'L'='logical',
            'F'='factor',
            'O'='factor,ordered',
            #           'zmienna z etykietami wartości'='labelled',
            'D'='Date',
-           'D'='POSIXlt,POSIXt'
+           'T'='POSIXlt,POSIXt',
+           'T'='POSIXct,POSIXt',
+           'B'='logical'
     )
     prefix_unknown <- " ("
     sufffix_unknown <- ")"

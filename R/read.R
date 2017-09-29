@@ -170,7 +170,7 @@ set_apply_labels<-function(dt, labels, vartypes, flagUseTaggedNA=TRUE, in_varnam
         , error=function(e){return(NULL)})
       if (!is.null(varDate))
       {
-        copy_var_attributes(var, varDate)
+      	copy_obj_attributes(var, varDate)
 
         return(list(var=varDate, NAlabels=myNAlabels, NAlevels=myNAlevels, levels=mylevels, labels=mylabels ))
       }
@@ -201,7 +201,7 @@ set_apply_labels<-function(dt, labels, vartypes, flagUseTaggedNA=TRUE, in_varnam
         {
           msg<-paste0("doesn't support tagged NA. Keeping all tagged NA as non-missing text labels")
           var <- origvar
-          copy_var_attributes(origvar, var)
+          copy_obj_attributes(origvar, var)
 
         } else {
           msg<-paste0("doesn't support tagged NA. Removing all tagged NA into plain NA. Consider replacing the vector into numeric")
@@ -210,7 +210,7 @@ set_apply_labels<-function(dt, labels, vartypes, flagUseTaggedNA=TRUE, in_varnam
       }
       return(list(var=var, NAlabels=character(0), NAlevels=character(0), levels=mylevels, labels=mylabels ))
     }
-    copy_var_attributes(var, numvar)
+    copy_obj_attributes(var, numvar)
 
     if (vartypes[[varnr]]=='D')
     {
@@ -227,7 +227,7 @@ set_apply_labels<-function(dt, labels, vartypes, flagUseTaggedNA=TRUE, in_varnam
           newvar<-add_msg_var(var,
                   message = paste0("cannot be converted into date"),
                   flag_show_type=TRUE, flag_warning=TRUE);
-          copy_var_attributes(origvar, newvar)
+          copy_obj_attributes(origvar, newvar)
 
           return(list(newvar))
         }
@@ -267,7 +267,7 @@ set_apply_labels<-function(dt, labels, vartypes, flagUseTaggedNA=TRUE, in_varnam
     if (((length(myNAlevels)==0) || flagUseTaggedNA) && !forceNumeric && vartypes[[varnr]] %in% c('I','F'))
     {
       newnumvar <- as.integer(numvar)
-      copy_var_attributes(numvar, newnumvar)
+      copy_obj_attributes(numvar, newnumvar)
       return(list(var=newnumvar, NAlabels=list(), NAlevels=list(), levels=mylevels, labels=mylabels ))
 
     }
@@ -294,7 +294,7 @@ set_apply_labels<-function(dt, labels, vartypes, flagUseTaggedNA=TRUE, in_varnam
         setattr(var, "labels", setNames(haven::tagged_na(NAlevels),NAlabels))
         varret <- var
       }
-      copy_var_attributes(var, varret)
+    	copy_obj_attributes(var, varret)
       return(varret)
     }
 
@@ -305,13 +305,13 @@ set_apply_labels<-function(dt, labels, vartypes, flagUseTaggedNA=TRUE, in_varnam
         if (all(sort(unique(var)) %in% levels))
         {
           varret <- factor(var, levels=levels, labels=labels)
-          copy_var_attributes(var, varret)
+          copy_obj_attributes(var, varret)
           setattr(varret, 'labels', NULL)
           return(factor(var, levels=levels, labels=labels))
         }
       }
       varret <- labelled::labelled(var, setNames(levels, labels))
-      copy_var_attributes(var, varret)
+      copy_obj_attributes(var, varret)
       return(varret)
     }
     return(var)

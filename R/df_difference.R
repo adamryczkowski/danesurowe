@@ -353,7 +353,7 @@ gen_difference_df<-function(df1, df2, df1_key=NULL, df2_key=NULL, columns_to_ign
   	for(colname in df1specific_colnames) {
   		df2[,(colname):=df1[[colname]][[1]]]
   		df2[1:nrow(df2),(colname):=NA]
-  		copy_var_attributes(df1[[colname]], df2[[colname]])
+  		copy_obj_attributes(df1[[colname]], df2[[colname]])
   	}
   }
 
@@ -361,7 +361,7 @@ gen_difference_df<-function(df1, df2, df1_key=NULL, df2_key=NULL, columns_to_ign
   	for(colname in df2specific_colnames) {
   		df1[,(colname):=df2[[colname]][[1]]]
   		df1[1:nrow(df1),(colname):=NA]
-  		copy_var_attributes(df2[[colname]], df1[[colname]])
+  		copy_obj_attributes(df2[[colname]], df1[[colname]])
   	}
   }
   df1_names<-colnames(df1)
@@ -496,7 +496,6 @@ DiffMatrix<-function(df1_sorted, df2_sorted, col_names){
   diff_matrix=data.matrix(diffdb)
   return(diff_matrix)
 }
-
 
 compare_two_variables<-function(var1, var2)
 {
