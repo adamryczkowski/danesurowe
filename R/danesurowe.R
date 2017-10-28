@@ -214,6 +214,28 @@ GetLevels<-function(var, flag_recalculate=TRUE)
   }
 }
 
+GetUnit<-function(var)
+{
+  unit<-attr(var, 'units')
+  if(is.null(unit)) {
+    return('')
+  } else {
+    return(unit)
+  }
+}
+
+GetUnits<-function(vars){
+  if('list' %in% class(vars)||'data.frame' %in% class(vars)) {
+    ans<-rep("",  length(vars))
+    for(i in seq_along(vars)){
+      ans[[i]]<-GetUnit(vars[[i]])
+    }
+  } else {
+    ans<-GetUnit(vars)
+  }
+  return(ans)
+}
+
 GetLabels<-function(var, flag_recalculate=TRUE)
 {
   if('factor' %in% class(var))

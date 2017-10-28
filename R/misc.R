@@ -66,7 +66,7 @@ format_case_list<-function(case_names, flag_quote='`', all_cases=NULL, name_of_c
 
 format_var_name_1<-function(colname, longcolname,
                           flag_main_is_short_name=TRUE, flag_include_secondary_name=FALSE,
-                          flag_quote_shortname='', flag_quote_longname='') {
+                          flag_quote_shortname='', flag_quote_longname='', units="") {
   if(longcolname=='') {
     flag_main_is_short_name <- TRUE
     flag_include_secondary_name <- FALSE
@@ -86,6 +86,9 @@ format_var_name_1<-function(colname, longcolname,
     }
     msg<-paste0(msg, ')')
   }
+  if(units!="") {
+    msg<-paste0(msg, " [", units, "]")
+  }
 	return(msg)
 }
 
@@ -95,7 +98,7 @@ df <- tibble(name = c("Tata", "Mama", "Mikołaj", "Zosia", paste0("Dziecko ",3:1
 setattr(df$lata, 'infix_equal', ": ")
 setattr(df$height, 'label', 'Wzrost')
 
-format_var_name<-Vectorize(format_var_name_1, vectorize.args = c('colname', 'longcolname'))
+format_var_name<-Vectorize(format_var_name_1, vectorize.args = c('colname', 'longcolname' ,'units'))
 
 # wykorzystywane atrybuty kolumn df:
 # * label - nazwa danego atrybutu
@@ -267,7 +270,7 @@ format_colnames<-function(df, i, quote_bare_name='`', quote_label='') {
 
 format_var_list<-function(colnames, longcolnames=NULL, dt=NULL,
                           flag_main_is_short_name=FALSE, flag_include_secondary_name=FALSE,
-                          flag_quote_shortname='', flag_quote_longname='', name_of_variables='variables')
+                          flag_quote_shortname='', flag_quote_longname='', name_of_variables='variables', units="")
 {
   if(is.null(dt)) {
     complementary_colnames <- NULL
@@ -289,6 +292,12 @@ format_var_list<-function(colnames, longcolnames=NULL, dt=NULL,
     }
   }
 
+  if(length(units)>1){
+    if(length(units)!=length(colnames)){
+      stop("Length of units must be the same as length of colnames")
+    }
+  }
+
   if(length(colnames)==0)
   {
     return('')
@@ -297,7 +306,7 @@ format_var_list<-function(colnames, longcolnames=NULL, dt=NULL,
   mynames<-format_var_name(colnames, longcolnames, flag_main_is_short_name=flag_main_is_short_name,
                            flag_include_secondary_name=flag_include_secondary_name,
                            flag_quote_shortname=flag_quote_shortname,
-                           flag_quote_longname=flag_quote_longname)
+                           flag_quote_longname=flag_quote_longname, units=units)
 
   if(length(colnames)==1)
   {
