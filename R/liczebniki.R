@@ -14,9 +14,9 @@ liczebnik<-function(liczba, mianownik, dopelniacz, lmnoga, flag_liczby_slowami=F
     out<-format(liczba, big.mark = '\uA0')
   }
   do_stu <- liczba %% 100
-  if(do_stu==1) {
+  if(do_stu==1 && liczba < 100) {
     out<-paste0(out, " ", mianownik)
-  } else if (do_stu<5) {
+  } else if (do_stu<5 && do_stu>0) {
     out<-paste0(out, " ", dopelniacz)
   } else if (do_stu<22) {
     out<-paste0(out, " ", lmnoga)

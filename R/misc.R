@@ -873,14 +873,14 @@ nice_class_names_1<-function(var, language=c('EN','PL')) {
     dic<-c('liczba rzeczywista'='numeric',
            'liczba całkowita'='integer',
            'tekst'='character',
-           'zmienna tak/nie'='logical',
+           'zmienna dwupoziomowa'='logical',
            'zmienna nominalna'='factor',
            'zmienna porządkowa'='factor,ordered',
 #           'zmienna z etykietami wartości'='labelled',
            'data'='Date',
            'czas ze strefą czasową'='POSIXlt,POSIXt',
-           'czas UTC'='POSIXct,POSIXt',
-           'tak/nie'='logical'
+           'czas UTC'='POSIXct,POSIXt'
+#           'tak/nie'='logical'
 
     )
     prefix_unknown <- " (która dodatkowo jest "
@@ -895,8 +895,8 @@ nice_class_names_1<-function(var, language=c('EN','PL')) {
            #           'zmienna z etykietami wartości'='labelled',
            'D'='Date',
            'T'='POSIXlt,POSIXt',
-           'T'='POSIXct,POSIXt',
-           'B'='logical'
+           'T'='POSIXct,POSIXt'
+#           'B'='logical'
     )
     prefix_unknown <- " ("
     sufffix_unknown <- ")"
@@ -929,7 +929,7 @@ nice_class_names_1<-function(var, language=c('EN','PL')) {
   if(length(unknown_myclasses)>0) {
     out <- paste0(out, prefix_unknown, paste0(unknown_myclasses, collapse=', '), suffix_unknown)
   }
-
+  #cat(paste0("out: ", out))
   return(out)
 }
 
