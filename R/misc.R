@@ -943,3 +943,19 @@ nice_class_names_1<-function(var, language=c('EN','PL')) {
 }
 
 nice_class_names<-Vectorize(nice_class_names_1, vectorize.args = 'var')
+
+FindVariables<-function(dt, text) {
+  vec1<-colnames(dt)
+  vec2<-danesurowe::GetVarLabel(dt, vec1)
+  vec3<-map(dt, ~danesurowe::GetLabels(.,flag_recalculate = FALSE))
+  if(!'pattern' %in% class(text) ){
+    text<-stringr::fixed(text)
+  }
+  hits1<-stringr::str_detect(string = vec1, pattern = text)
+  hits2<-stringr::str_detect(string = vec2, pattern = text)
+  hits3<-map_lgl(vec3, ~sum(stringr::str_detect(string = ., pattern = text))>0)
+
+  vars<-unique(c(which(hits1), which(hits2), which(hits3)))
+  setNames(vec2[vars], vec1[vars])
+  #danesurowe::format_var_list(colnames = vec1[vars], longcolnames = vec2[vars])
+}
