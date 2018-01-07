@@ -119,6 +119,15 @@ format_var_name<-Vectorize(format_var_name_1, vectorize.args = c('colname', 'lon
 #                     to zostanie użyty długi format w formie niedokończonej listy (z ...).
 #                     W przeciwnym razie, zostanie wklejona tabela.
 # txt_attribute_separator - przydatne, gdy generujemy słowa a nie tabelkę.
+# threshold_for_table     - Jeśli liczba elementów przekroczy ten próg, to spróbujemy zrobić tabelę (lub notację
+#                           odwróconą, jeśli podany zbiór df zawiera wszystkie potencjalne rekordy, a nie
+#                           tylko te, które chcemy wypisać, z kolumną filtrującą wskazaną przez argument includes)
+#
+#Przykład:
+#> df<-tibble(bla=as.character(1:5))
+#> danesurowe::format_item_list(df = df)
+# [1] "1, 2, 3, 4 oraz 5"
+
 format_item_list<-function(df, colname_with_includes=NULL, includes=NULL,  flag_use_ellipsis = FALSE,
                            threshold_for_table=10, percent_for_inversion=0.8,
                            table_caption=NULL, table_prefix='\n\n', text_prefix='',
@@ -181,8 +190,8 @@ format_item_list<-function(df, colname_with_includes=NULL, includes=NULL,  flag_
   }
   #Teraz wyłapmy konieczność stworzenia tabelki
   tabdf<-df[includes,]
-  copy_dt_attributes(df ,tabdf)
   tabdf <- as_tibble(mutate_all(tabdf, report_values)) #Formatujemy tabelę
+  tabdf<-copy_dt_attributes(df, tabdf)
 
   if(sum(includes)>threshold_for_table) {
     if(!flag_use_ellipsis) {
@@ -679,7 +688,13 @@ vartype2class <- function(vartype)
 #Returns a letter that encodes data type.
 class2vartype<-function(var)
 {
-  classes_sorted <- paste0(sort(class(var)), collapse=',')
+  class2vartype_str(class(var), all(is.na(var)))
+}
+
+#Returns a letter that encodes data type.
+class2vartype_str<-function(classes, all_is_na)
+{
+  classes_sorted <- paste0(sort(classes), collapse=',')
 
   if(classes_sorted %in% c('factor', 'factor,ordered'))
   {
@@ -704,7 +719,7 @@ class2vartype<-function(var)
     return('S')
   } else if(classes_sorted %in% c('logical', 'labelled,logical'))
   {
-    if(all(is.na(var))) {
+    if(all_is_na) {
       return('0')
     } else {
       return('B')
@@ -712,8 +727,8 @@ class2vartype<-function(var)
   } else {
     browser()
     return('')
-#    stop(paste0("Unkown class: ", classes_sorted))
-#    browser()
+    #    stop(paste0("Unkown class: ", classes_sorted))
+    #    browser()
   }
 }
 
@@ -839,6 +854,7 @@ copy_dt_attributes<-function(dt_source, dt_dest, which_colnames='') {
   for (varname in which_colnames) {
     copy_attributes(dt_source, dt_dest, varname)
   }
+  dt_dest
 }
 
 copy_var_attributes<-function(var_source, var_dest_name, dt_dest) {

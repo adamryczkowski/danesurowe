@@ -36,7 +36,14 @@ NULL
     rng_Version = 'Version', #
     rng_XLSFormulas = 'XLSFormulas',
     rng_RFormulas = 'RFormulas',
-    globalPathPrefix = '/home/Adama-docs/Adam/MyDocs/Statystyka/Aktywne analizy'
+    globalPathPrefix = '/home/Adama-docs/Adam/MyDocs/Statystyka/Aktywne analizy',
+    df_used_attributes = c('label', 'class', 'theoretical_max', 'theoretical_min',
+                           'force_integers', 'required', 'limit_to_labels', 'xls_formula', 'r_formula',
+                           'levels', 'labels'),
+    all_vartypes = c(B='Boolean', F='Factor/Ordered',
+                     L='Labelled', I='Integer',
+                     N='Numeric', D='Date',
+                     T='DateTime', S='String')
   )
   toset	<-	!(names(op.danesurowe)	%in%	names(op))
   if(any(toset))	options(op.danesurowe[toset])
@@ -168,8 +175,8 @@ IsLimitedToLabels_1<-function(var) {
 
 IsLimitedToLabels<-Vectorize(IsLimitedToLabels_1)
 
-GetLabelsString_1<-function(var) {
-  levels<-GetLevels(var)
+GetLabelsString_1<-function(var, flag_all_labels=FALSE) {
+  levels<-GetLevels(var,flag_recalculate = flag_all_labels)
   if(length(levels)>0) {
     levels<-levels[order(levels)]
     levels_str <- paste0(format_values(levels), '="', names(levels),'"', collapse = ';')

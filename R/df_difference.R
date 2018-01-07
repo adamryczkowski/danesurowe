@@ -651,6 +651,7 @@ convert_to_string<-function(var, row, missing_string='NA', string_quote_characte
 		browser()
 	}
   vartype<-class2vartype(var)
+#  if(vartype=='B') browser()
   val<-var[[row]]
   if (vartype %in% c('L', 'N')) {
     if (is.na(val))  {
@@ -670,7 +671,7 @@ convert_to_string<-function(var, row, missing_string='NA', string_quote_characte
       									GetLabels(var)[match(val, GetLevels(var))],
       									other_text_quote_character)
     }
-  } else if (vartype %in% c('I', 'D', 'S', 'F', '0'))  {
+  } else if (vartype %in% c('I', 'D', 'S', 'F', '0', 'B'))  {
   	if(is.na(val)) {
   		val_out <- missing_string
   	} else if (vartype == 'S') {
@@ -681,6 +682,7 @@ convert_to_string<-function(var, row, missing_string='NA', string_quote_characte
   		val_out <- as.character(val)
   	}
   } else  {
+    browser()
     stop(paste0("Unknown type ", vartype))
   }
   return(val_out)
@@ -1467,25 +1469,57 @@ create_diffdb<-function(diff_matrix, diff_rownames, diff_colnames,
   return(row_db)
 }
 
-create_df_from_df_structure<-function(df, flag_add_nice_names=FALSE, default_df_name=NULL) {
+create_df_from_df_structure<-function(df, flag_add_nice_names=FALSE, default_df_name=NULL, flag_include_vartype=FALSE) {
   outdf<-dplyr::tibble(colname=colnames(df), label=Hmisc::label(df),
                        class=purrr::map_chr(as.list(df), ~paste0(sort(class(.)),collapse=',')),
+                       vartype=if(flag_include_vartype) {purrr::map_chr(as.list(df), ~class2vartype(.))} else {NA},
                        theoretical_min_numeric=GetTheoreticalMin(df),
                        theoretical_max_numeric=GetTheoreticalMax(df),
                        force_integers=AreIntegersForced(df),
                        required=IsRequired(df),
                        limit_to_labels=IsLimitedToLabels(df),
+                       unit=GetUnits(df),
                        xls_formula=GetExcelFormula(df), r_formula=GetRFormula(df),
                        labels_string=as.character(GetLabelsString(df)))
+  all_attributes<-getOption('df_used_attributes')
+
+  ans<-plyr::llply(df, function(v) {
+    a<-attributes(v)
+    filtered_names<-setdiff(names(a), all_attributes)
+    a[filtered_names]
+  } )
+  other_attributes<-reduce(ans, function(x1, x2) unique(c(x1, names(x2))), .init = names(ans[[1]]) )
+  for(i in seq_along(other_attributes)) {
+    attrname <- other_attributes[[i]]
+    classes<-setdiff(reduce(ans, function(x1, x2) unique(c(x1, class(x2[[attrname]]))), .init = class(ans[[1]][[attrname]])), 'NULL')
+    if(length(classes)>1) {
+      browser()
+      warning(paste0("Atrybut ", attrname, " ma niejednorodny typ danych: ", paste0(classes, collapse=' i ')))
+    }
+    vec<-plyr::laply(df, .fun = function(var) {
+      val<-attr(var, attrname)
+      if(is.null(val)) {
+        return(NA)
+      } else {
+        val
+      }
+    })
+    outdf[[attrname]]<-vec
+  }
+
   if(flag_add_nice_names) {
   	setattr(outdf$colname, 'label', 'Internal variable name')
   	setattr(outdf$label, 'label', 'Variable name')
   	setattr(outdf$class, 'label', 'Data storage class')
+  	if(flag_include_vartype) {
+  	  setattr(outdf$vartype, 'label', 'Type symbol')
+  	}
   	setattr(outdf$theoretical_min_numeric, 'label', 'Theoretical min')
   	setattr(outdf$theoretical_max_numeric, 'label', 'Theoretical max')
   	setattr(outdf$force_integers, 'label', 'Force only integral values')
   	setattr(outdf$required, 'label',  'Force only non-missing values')
   	setattr(outdf$limit_to_labels, 'label', 'Force only values that are labelled')
+  	setattr(outdf$unit, 'label', 'Variable unit')
   	setattr(outdf$xls_formula, 'label', 'Excel formula')
   	setattr(outdf$r_formula, 'label', 'R formula')
   	setattr(outdf$labels_string, 'label', 'Variable labels dictionary')
@@ -1508,10 +1542,16 @@ create_df_from_df_structure<-function(df, flag_add_nice_names=FALSE, default_df_
     myclasses_names<-c(known_classes, unknown_classes)
     setNames(myclasses_names, myclasses_labels)
 
-
-
     outdf$class <- factor(outdf$class, levels=myclasses_names, labels = myclasses_labels)
+
   }
+  if(flag_include_vartype) {
+    all_values<-getOption('all_vartypes')
+    outdf$vartype <- factor(outdf$vartype, levels=names(all_values), labels = names(all_values))
+  } else {
+    outdf <- outdf %>% select(-vartype)
+  }
+
   setattr(outdf,'label', paste0('Structure of ', GetDBName(df, default_df_name)))
   return(outdf)
 }
