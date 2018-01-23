@@ -48,6 +48,9 @@ df_difference<-function(df1, df2, df1_key=NULL, df2_key=NULL, columns_to_ignore=
 												flag_sort_cols = FALSE
 ){
 	dfnames<-get_differentiated_names(df1, df2)
+	if(identical(return_format, c('raw','md'))) {
+	  return_format<-'raw'
+	}
 
 #  browser() #TODO: Wymyśleć system filtrowania diffdb. Np. aby utoższamić NA z factorem NA.
 	# A tibble: 11 x 6
@@ -115,22 +118,23 @@ df_difference<-function(df1, df2, df1_key=NULL, df2_key=NULL, columns_to_ignore=
     diffs_lengths <- purrr::map_dbl(ans$diffs, ~length(.$items))
     diffs <- ans$diffs[rev(order(diffs_lengths))]
 
-    cl<-kmeans(log(diffs %>% map('items') %>% map_dbl(length)),length(diffs)^(1/2.5))
-    centers<-order(as.numeric(cl$centers))
-    lengths<-plyr::mapvalues(cl$cluster, centers, seq_along(centers))
+    if(length(diffs)>0) {
+      cl<-kmeans(log(diffs %>% map('items') %>% map_dbl(length)),length(diffs)^(1/2.5))
+      centers<-order(as.numeric(cl$centers))
+      lengths<-plyr::mapvalues(cl$cluster, centers, seq_along(centers))
 
-    get_key_pos<-function(type_1row, key) {
-    	if(type_1row) {
-    		return(match(key, diff_db$common_rownames))
-    	} else {
-    		return(match(key, diff_db$common_colnames))
-    	}
+      get_key_pos<-function(type_1row, key) {
+        if(type_1row) {
+          return(match(key, diff_db$common_rownames))
+        } else {
+          return(match(key, diff_db$common_colnames))
+        }
+      }
+
+      indexes<-purrr::map2_dbl(diffs %>% map_lgl('type_1row'), diffs %>% map_chr('key'), get_key_pos)
+
+      diffs<-diffs[order(-lengths, diffs %>% map_lgl('type_1row'), indexes ) ]
     }
-
-    indexes<-purrr::map2_dbl(diffs %>% map_lgl('type_1row'), diffs %>% map_chr('key'), get_key_pos)
-
-    diffs<-diffs[order(-lengths, diffs %>% map_lgl('type_1row'), indexes ) ]
-
 
     if(return_format=='md') {
     	if(flag_include_statistics) {
@@ -190,9 +194,11 @@ df_difference<-function(df1, df2, df1_key=NULL, df2_key=NULL, columns_to_ignore=
 
   if(flag_compare_structure) {
     ans<-df_structure_difference(df1=df1, df2=df2,
-                            attributes_to_ignore = attributes_to_ignore_in_structure,
-                            flag_explain_in_nice_names = flag_explain_structure_in_nice_names,
-                            name_of_variable = name_of_variable, name_of_variables = name_of_variables)
+                                 flag_comment_deleted_cols = flag_comment_deleted_rows,
+                                 flag_comment_new_cols = flag_comment_new_cols,
+                                 attributes_to_ignore = attributes_to_ignore_in_structure,
+                                 flag_explain_in_nice_names = flag_explain_structure_in_nice_names,
+                                 name_of_variable = name_of_variable, name_of_variables = name_of_variables)
 
     msg <- paste0('Changes to data structure and layout when transforming ', flag_quote_longvarname,
     							dfnames$name1, flag_quote_longvarname, ' into ', flag_quote_longvarname,
@@ -406,13 +412,15 @@ gen_difference_df<-function(df1, df2, df1_key=NULL, df2_key=NULL, columns_to_ign
   if(flag_include_deleted_rows) {
   	#Adding new cols to df2
   	for(rowname in df1specific_rownames) {
-  		empty_row<-rbind(df2[integer(0),], setNames(list(a=rowname),df2_key), fill=TRUE)
+  	  empty_row<-c(setNames(list(a=rowname),df2_key), setNames(rep(NA,ncol(df2)-1), setdiff(colnames(df2), df2_key ) ))
+  		#empty_row<-rbind(df2[integer(0),], setNames(list(a=rowname),df2_key))
   		df2<-rbind(df2, empty_row)
   	}
   }
   if(flag_include_new_rows) {
   	for(rowname in df2specific_rownames) {
-  		empty_row<-rbind(df1[integer(0),], setNames(list(a=rowname),df1_key), fill=TRUE)
+#  		empty_row<-rbind(df1[integer(0),], setNames(list(a=rowname),df1_key), fill=TRUE)
+  		empty_row<-c(setNames(list(a=rowname),df1_key), setNames(rep(NA,ncol(df1)-1), setdiff(colnames(df1), df1_key ) ))
   		df1<-rbind(df1, empty_row)
   	}
   }
@@ -1534,11 +1542,11 @@ create_df_from_df_structure<-function(df, flag_add_nice_names=FALSE, default_df_
                     'POSIX date'='POSIXlt,POSIXt'
                     )
     all_classes <- unique(outdf$class)
-    which_known<-which(all_classes %in% class_levels)
-    known_classes<-all_classes[which_known]
+    which_known<-which(class_levels %in% all_classes)
+    known_classes<-class_levels[which_known]
     unknown_classes<-all_classes[setdiff(seq_along(all_classes), which_known)]
 
-    myclasses_labels<-c(names(class_levels[which_known]),unknown_classes)
+    myclasses_labels<-c(names(class_levels[map_int(known_classes, ~which(.==class_levels))]),unknown_classes)
     myclasses_names<-c(known_classes, unknown_classes)
     setNames(myclasses_names, myclasses_labels)
 
@@ -1557,12 +1565,15 @@ create_df_from_df_structure<-function(df, flag_add_nice_names=FALSE, default_df_
 }
 
 df_structure_difference<-function(df1, df2, attributes_to_ignore='',
+                                  flag_comment_new_cols=TRUE, flag_comment_deleted_cols=TRUE,
                                   flag_explain_in_nice_names=TRUE, name_of_variable, name_of_variables){
   df1_struct <- create_df_from_df_structure(df1, flag_add_nice_names = flag_explain_in_nice_names)
   df2_struct <- create_df_from_df_structure(df2, flag_add_nice_names = flag_explain_in_nice_names)
 
   ans<-gen_difference_df(df1=df1_struct, df2=df2_struct, df1_key = 'colname', df2_key = 'colname',
-                columns_to_ignore = attributes_to_ignore, name_of_cases=name_of_variables)
+                         flag_include_new_rows = flag_comment_new_cols,
+                         flag_include_deleted_rows = flag_comment_deleted_cols,
+                         columns_to_ignore = attributes_to_ignore, name_of_cases=name_of_variables)
 
   ans$diffdb <- ans$diffdb %>% filter(status==0)
 

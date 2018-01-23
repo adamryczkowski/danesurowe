@@ -295,7 +295,14 @@ GetVarLabel_1<-function(dt, varname, quote_varname='', quote_varlabel='') {
   }
 }
 
-GetVarLabel<-Vectorize(GetVarLabel_1, vectorize.args = 'varname')
+GetVarLabel<-function(dt, varname=NULL,  quote_varname='', quote_varlabel='') {
+  if(is.null(varname)) {
+    varname=colnames(dt)
+  }
+  fn<-Vectorize(GetVarLabel_1, vectorize.args = 'varname')
+  return(fn(dt=dt, varname=varname, quote_varname=quote_varname, quote_varlabel=quote_varlabel))
+}
+
 
 # Returns label corresponding to the value in variable var, or returns character(0) if not found.
 # If possible, matches tagged_na.
@@ -360,7 +367,14 @@ GetExcelFormula_1<-function(var) {
   }
 }
 
-GetExcelFormula<-Vectorize(GetExcelFormula_1)
+GetExcelFormula<-function(var) {
+  if('list' %in% class(var)) {
+    ans<-map_chr(var, GetExcelFormula_1)
+  } else {
+    ans<-GetExcelFormula_1(var)
+  }
+  return(ans)
+}
 
 GetRFormula_1<-function(var) {
   frm <- attr(var, 'r_formula')
@@ -371,7 +385,14 @@ GetRFormula_1<-function(var) {
   }
 }
 
-GetRFormula<-Vectorize(GetRFormula_1)
+GetRFormula<-function(var) {
+  if('list' %in% class(var)) {
+    ans<-map_chr(var, GetRFormula_1)
+  } else {
+    ans<-GetRFormula_1(var)
+  }
+  return(ans)
+}
 
 #Returns list of symbols mentioned by the formula
 GetRFormulaSymbols<-function(var) {

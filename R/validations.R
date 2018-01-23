@@ -122,7 +122,6 @@ fn_validate_Required<-function(varnr, dt)
     if(sum(which_required)>0)
     {
       cases=row.names(dt)[which_required]
-
       msg<-paste0(
         'contains ',
         ifelse(length(cases)>1,
@@ -322,6 +321,7 @@ fn_validate_Formulas<-function(varnr, dt)
   var<-dt[[varnr]]
 
   rformula <- GetRFormula(var)
+  if(length(rformula)>1) browser()
 
   if (is.na(rformula)) {
     return('')

@@ -15,9 +15,9 @@ format_case_list<-function(case_names, flag_quote='`', all_cases=NULL, name_of_c
 
 	if(is.logical(flag_quote)){
 		if(flag_quote) {
-			qutes<-'`'
+			quotes<-'`'
 		} else {
-			qutes<-''
+			quotes<-''
 		}
 	} else {
 		quotes <- flag_quote
@@ -128,6 +128,28 @@ format_var_name<-Vectorize(format_var_name_1, vectorize.args = c('colname', 'lon
 #> danesurowe::format_item_list(df = df)
 # [1] "1, 2, 3, 4 oraz 5"
 
+format_item_list_en<-function(df, colname_with_includes=NULL, includes=NULL,  flag_use_ellipsis = FALSE,
+                              threshold_for_table=10, percent_for_inversion=0.8,
+                              table_caption=NULL, table_prefix='\n\n', text_prefix='',
+                              txt_attribute_separator=', ', txt_attribute_separator_last=' and ',
+                              txt_attribute_prefix=' (', txt_attribute_suffix=')',
+                              txt_separator=', ', txt_separator_last = ' and ',
+                              txt_attribute_infix = ':\uA0', txt_attribute_bare_quote = '`',
+                              txt_attribute_label_quote = '',
+                              prefix_all_except = 'all except:: ') {
+  format_item_list(df=df, colname_with_includes=colname_with_includes, includes=includes,
+                   flag_use_ellipsis = flag_use_ellipsis, threshold_for_table=threshold_for_table,
+                   percent_for_inversion=percent_for_inversion, table_caption=table_caption,
+                   table_prefix=table_prefix, text_prefix=text_prefix,
+                   txt_attribute_separator=txt_attribute_separator,
+                   txt_attribute_separator_last=txt_attribute_separator_last,
+                   txt_attribute_prefix=txt_attribute_prefix, txt_attribute_suffix=txt_attribute_suffix,
+                   txt_separator=txt_separator, txt_separator_last = txt_separator_last,
+                   txt_attribute_infix = txt_attribute_infix, txt_attribute_bare_quote = txt_attribute_bare_quote,
+                   txt_attribute_label_quote = txt_attribute_label_quote,
+                   prefix_all_except = prefix_all_except)
+}
+
 format_item_list<-function(df, colname_with_includes=NULL, includes=NULL,  flag_use_ellipsis = FALSE,
                            threshold_for_table=10, percent_for_inversion=0.8,
                            table_caption=NULL, table_prefix='\n\n', text_prefix='',
@@ -138,6 +160,9 @@ format_item_list<-function(df, colname_with_includes=NULL, includes=NULL,  flag_
                            txt_attribute_label_quote = '',
                            prefix_all_except = 'wszystkie poza: '
                            ) {
+  if(is.atomic(df)) {
+    df<-tibble::tibble(val=df)
+  }
   if (!is.null(colname_with_includes)) {
     if(length(colname_with_includes)!=1)
       stop("colname_with_includes argument must have length 1")
@@ -190,8 +215,12 @@ format_item_list<-function(df, colname_with_includes=NULL, includes=NULL,  flag_
   }
   #Teraz wyłapmy konieczność stworzenia tabelki
   tabdf<-df[includes,]
-  tabdf <- as_tibble(mutate_all(tabdf, report_values)) #Formatujemy tabelę
   tabdf<-copy_dt_attributes(df, tabdf)
+  for(cn in seq_along(colnames(tabdf))) {
+    tabdf[[cn]]<-report_values(tabdf[[cn]])
+  }
+  tabdf<-tibble::as_tibble(tabdf)
+#  tabdf <- tibble::as_tibble(dplyr::mutate_all(tabdf, report_values)) #Formatujemy tabelę
 
   if(sum(includes)>threshold_for_table) {
     if(!flag_use_ellipsis) {
@@ -213,7 +242,7 @@ format_item_list<-function(df, colname_with_includes=NULL, includes=NULL,  flag_
         ans_vec<-format_attr_list(df = df[, 2:ncol(df)], nrow=i, quote_bare_name = txt_attribute_bare_quote,
                                   quote_label = txt_attribute_label_quote, infix = txt_attribute_infix)
       } else {
-        ans_vec<-map_chr(df[i,2:ncol(df)], as.character)
+        ans_vec<-purrr::map_chr(df[i,2:ncol(df)], as.character)
       }
       if(ncol(df)>2) {
         ans<-paste0(df[[1]][[i]], txt_attribute_prefix,
@@ -230,7 +259,7 @@ format_item_list<-function(df, colname_with_includes=NULL, includes=NULL,  flag_
   } else {
     values <- df[[1]]
   }
-  setattr(values, 'verbatim', 1)
+  data.table::setattr(values, 'verbatim', 1)
 
   if(sum(includes)>threshold_for_table) {
     values<-c(values[1:7], '...', values[length(values)-3, length(values)])
@@ -249,9 +278,9 @@ format_item_list<-function(df, colname_with_includes=NULL, includes=NULL,  flag_
 #   Imię: Adam (wiek: 13)
 #df musi mieć tylko jeden rekord
 format_attr_list<-function(df, nrow=1, quote_bare_name='`', quote_label='', infix='=') {
-  mycolnames <- format_colnames(df, quote_bare_name='`', quote_label='')
+  mycolnames <- format_colnames(df, quote_bare_name=quote_bare_name, quote_label=quote_label)
 
-  infixes <- map_chr(df,  function(v) {
+  infixes <- purrr::map_chr(df,  function(v) {
     x=attr(v, 'infix_equal')
     if(is.null(x)){
       infix
@@ -259,7 +288,7 @@ format_attr_list<-function(df, nrow=1, quote_bare_name='`', quote_label='', infi
       x
     }})
 
-  ans <- paste0(mycolnames, infixes, map_chr(df[nrow,], as.character))
+  ans <- paste0(mycolnames, infixes, purrr::map_chr(df[nrow,], as.character))
   return(ans)
 }
 
@@ -863,6 +892,7 @@ copy_var_attributes<-function(var_source, var_dest_name, dt_dest) {
   for(aname in attrnames) {
     setattr(dt_dest[[var_dest_name]], aname, a[[aname]])
   }
+  return(dt_dest)
 }
 
 copy_obj_attributes<-function(obj_source, obj_dest) {
