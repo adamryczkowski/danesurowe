@@ -46,7 +46,7 @@ readLabelSheet3<-function(file, dt, colcnt)
         #Standard factor
         ord<-order(as.integer(rngLevels))
         rngLabels<-rngLabels[ord]
-        label<-attr(dt[[varnr]],'label')
+        label<-attr(dt[[varnr]],'label', exact = TRUE)
         var<-as.integer(dt[[varnr]])
         setattr(var,'levels',rngLabels)
         setattr(var,'class','factor')
@@ -61,7 +61,7 @@ readLabelSheet3<-function(file, dt, colcnt)
           if (min(abs(c(rngLevels%%1, rngLevels%%1-1))) < 0.0000000000005)
           {
             rngLevels<-as.integer(rngLevels)
-            label<-attr(dt[[varnr]],'label')
+            label<-attr(dt[[varnr]],'label', exact = TRUE)
             dt[, varnr:=as.integer(dt[[varnr]]), with=FALSE]
             setattr(dt[[varnr]],'label',label)
           }

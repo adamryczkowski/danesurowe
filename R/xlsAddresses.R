@@ -12,17 +12,64 @@ getNamedRange <- function(file, namedRange, rowcount=1, colcount=1)
   sheets<-readxl::excel_sheets(file)
   if (! wewsheetname %in% sheets)
   {
-    stop(paste0("Wrong format of the ", file, ". Cannot find the ", wewsheetname , " sheet"))
+    wb<-xlsx::loadWorkbook(file)
+    nr<-xlsx::getRanges(wb)
+    nr_names<-purrr::map_chr(nr, ~.$getNameName())
+    if(!namedRange %in% nr_names) {
+      if(namedRange=='VariableGroupNames') {
+        xlsrange<-"grupy!F4"
+        sheetname<-"grupy"
+#        browser()
+      } else if (namedRange=='VariableGroupsColumn') {
+        xlsrange<-"variables!AI2"
+        sheetname<-'variables'
+      } else if (namedRange=='DBLongName') {
+        xlsrange<-"ster!C3"
+        sheetname<-'ster'
+      } else if (namedRange=='CustomerFolder') {
+        xlsrange<-"ster!B3"
+        sheetname<-'ster'
+      } else if (namedRange=='SubcustomerFolder') {
+        xlsrange<-"ster!B5"
+        sheetname<-'ster'
+      } else {
+        browser()
+        stop(paste0("Wrong format of the ", file, ". Cannot find the ", wewsheetname , " sheet or named range ", namedRange, '.'))
+      }
+
+    } else {
+
+      pos<-which(nr_names %in% namedRange)
+      nr<-nr[[pos]]
+      sheetname<-nr$getSheetName()
+      xlsrange<-nr$getRefersToFormula()
+    }
+    ans<-stringr::str_match(xlsrange, stringr::regex(paste0("^",sheetname,
+                                                            "!\\$?([A-Za-z]{0,2})\\$?([0-9]{0,5}):?\\$?([A-Za-z]{0,2})\\$?([0-9]{0,5})$")))
+    if(ans[[4]]=="") {
+      rng1<-cellranger::as.cell_addr(paste0("$", ans[[2]], "$", ans[[3]]))
+      rng2<-rng1
+    } else {
+      rng1<-cellranger::as.cell_addr(paste0("$", ans[[2]], "$", ans[[3]]))
+      rng2<-cellranger::as.cell_addr(paste0("$", ans[[4]], "$", ans[[5]]))
+    }
+    colnr<-rng1$col
+    rownr<-rng1$row
+    rowcount<-rng2$row - rng1$row + 1
+    colcount<-rng2$col - rng1$col + 1
+
+  } else {
+    rng<-readxl::read_excel(path=file, sheet=wewsheetname, skip=wewsheetrow-2)
+    if (!namedRange %in% rng[[1]])
+    {
+      stop(paste0("Cannot find the named range ", namedRange, " in sheet ", wewsheetname, " in file ", file))
+    }
+    rownr<-which(rng[[1]]==namedRange)
+    sheetname<-rng[[5]][[rownr]]
+    colnr<-rng[[7]][[rownr]]
+    rownr<-rng[[6]][[rownr]]
+
   }
-  rng<-readxl::read_excel(path=file, sheet=wewsheetname, skip=wewsheetrow-2)
-  if (!namedRange %in% rng[[1]])
-  {
-    stop(paste0("Cannot find the named range ", namedRange, " in sheet ", wewsheetname, " in file ", file))
-  }
-  rownr<-which(rng[[1]]==namedRange)
-  sheetname<-rng[[5]][[rownr]]
-  colnr<-rng[[7]][[rownr]]
-  rownr<-rng[[6]][[rownr]]
   return(list(file=file, sheetname=sheetname, rownr=rownr, colnr=colnr, rowcount=rowcount, colcount=colcount))
 }
 

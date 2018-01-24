@@ -281,7 +281,7 @@ format_attr_list<-function(df, nrow=1, quote_bare_name='`', quote_label='', infi
   mycolnames <- format_colnames(df, quote_bare_name=quote_bare_name, quote_label=quote_label)
 
   infixes <- purrr::map_chr(df,  function(v) {
-    x=attr(v, 'infix_equal')
+    x=attr(v, 'infix_equal', exact = TRUE)
     if(is.null(x)){
       infix
     } else {
@@ -294,7 +294,7 @@ format_attr_list<-function(df, nrow=1, quote_bare_name='`', quote_label='', infi
 
 format_colnames<-function(df, i, quote_bare_name='`', quote_label='') {
   fn_getlabel<-function(i) {
-    myname <- attr(df[[i]], 'label')
+    myname <- attr(df[[i]], 'label', exact = TRUE)
     if (is.null(myname)) {
       myname <- paste0(quote_bare_name, colnames(df)[[i]], quote_bare_name)
     } else {
@@ -431,7 +431,7 @@ format_values_as_one_string<-function(values, complementary_values=NULL, plural_
 
 format_values<-function(values)
 {
-  if(!is.null(attr(values,'verbatim'))) {
+  if(!is.null(attr(values,'verbatim', exact = TRUE))) {
     return(values)
   } else {
     UseMethod("format_values", values)
@@ -442,14 +442,14 @@ format_values<-function(values)
 
 get_decorations<-function(values, default='') {
   ans<-rep(default, length.out=2)
-  if(!is.null(attr(values,'decoration'))) {
-    ans<-rep(attr(values,'decoration'),2)
+  if(!is.null(attr(values,'decoration', exact = TRUE))) {
+    ans<-rep(attr(values,'decoration', exact = TRUE),2)
   }
-  if(!is.null(attr(values, 'decoration_prefix'))) {
-    ans[[1]]<-attr(values,'decoration_prefix')
+  if(!is.null(attr(values, 'decoration_prefix', exact = TRUE))) {
+    ans[[1]]<-attr(values,'decoration_prefix', exact = TRUE)
   }
-  if(!is.null(attr(values, 'decoration_suffix'))) {
-    ans[[2]]<-attr(values,'decoration_suffix')
+  if(!is.null(attr(values, 'decoration_suffix', exact = TRUE))) {
+    ans[[2]]<-attr(values,'decoration_suffix', exact = TRUE)
   }
   return(ans)
 }
@@ -485,7 +485,7 @@ format_values.Date<-function(values)
 format_values.factor<-function(values)
 {
 #  browser()
-  fmt<-attr(values, 'factor_sprintf_format')
+  fmt<-attr(values, 'factor_sprintf_format', exact = TRUE)
   if(is.null(fmt)) {
     fmt<-"%2$s (%1$s)"
   }
@@ -526,7 +526,7 @@ format_values.labelled<-function(values)
     Lvalues<-labelled::val_labels(values)
     Llabels<-names(labelled::val_labels(values))[!is.na(Lvalues)]
     Lvalues<-na.omit(Lvalues)
-    fmt<-attr(values, 'factor_sprintf_format')
+    fmt<-attr(values, 'factor_sprintf_format', exact = TRUE)
     if(is.null(fmt)) {
       fmt<-"%2$s (%1$s)"
     }
@@ -627,11 +627,11 @@ format_case_value_diff_list<-function(case_names, values1, values2, flag_quote=F
 }
 
 format_variable_name <- function(colname, var) {
-  if(is.null(attr(var, 'label')))
+  if(is.null(attr(var, 'label', exact = TRUE)))
   {
     return(colname)
   } else {
-    return(paste0(attr(var, 'label'), '(', colname, ')'))
+    return(paste0(attr(var, 'label', exact = TRUE), '(', colname, ')'))
   }
 }
 
@@ -832,7 +832,7 @@ pack_flags<-function(flag_show_formula=FALSE, flag_show_type=FALSE, flag_show_va
 
 does_show_factory<-function(pos) {
   return(function(var) {
-    flags<-attr(var, 'warnings_context')
+    flags<-attr(var, 'warnings_context', exact = TRUE)
     if(is.null(flags)) {
       return(FALSE)
     } else {
@@ -847,9 +847,9 @@ does_show_varnr<-does_show_factory(2)
 
 
 add_msg<-function(dt, varname, message, flag_error, flag_warning=TRUE, ...) {
-  msg <- attr(dt[[varname]], 'warnings');
+  msg <- attr(dt[[varname]], 'warnings', exact = TRUE);
   setattr(dt[[varname]], 'warnings', c(msg, message))
-  ctx <- attr(dt[[varname]], 'warnings_context')
+  ctx <- attr(dt[[varname]], 'warnings_context', exact = TRUE)
   if(is.null(ctx)) {
     ctx <- 0
   }
@@ -858,9 +858,9 @@ add_msg<-function(dt, varname, message, flag_error, flag_warning=TRUE, ...) {
 }
 
 add_msg_var<-function(var, message, flag_error, flag_warning=TRUE, ...) {
-  msg <- attr(var, 'warnings');
+  msg <- attr(var, 'warnings', exact = TRUE);
   setattr(var, 'warnings', c(msg, message))
-  ctx <- attr(var, 'warnings_context')
+  ctx <- attr(var, 'warnings_context', exact = TRUE)
   if(is.null(ctx)) {
     ctx <- 0
   }

@@ -361,7 +361,7 @@ set_apply_labels<-function(dt, labels, vartypes, flagUseTaggedNA=TRUE, in_varnam
       setattr(dt[[varnr]],'measure_type', vartypes[[varnr]])
       if (vartypes[[varnr]]=='O' && is.factor(dt[[varnr]]))
       {
-        setattr(dt[[varnr]],'class', c(attr(dt[[varnr]])),"ordered")
+        setattr(dt[[varnr]],'class', c(attr(dt[[varnr]])),"ordered", exact = TRUE)
       }
     }
     return(var)

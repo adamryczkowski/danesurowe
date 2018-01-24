@@ -3,14 +3,14 @@ fn_validate_ForceIntegers<-function(varnr, dt)
   # if(varnr==328) browser()
   #  warning(varnr)
   var<-dt[[varnr]]
-  vartype <- attr(var,'measure_type')
+  vartype <- attr(var,'measure_type', exact = TRUE)
   if (is.null(vartype))
   {
     #Error! Nie dodaliśmy typu do zmiennej!...
     return()
   }
   is_num<-switch(vartype, 'F'=1, 'L'=1, 'I'=1, 'N'=1, 'D'=1,0)
-  force_integers<-attr(var, 'force_integers')
+  force_integers<-attr(var, 'force_integers', exact = TRUE)
   if (!is.null(force_integers) && is_num)
   {
     # if (varnr==13)
@@ -46,14 +46,14 @@ fn_validate_TheoreticalMin<-function(varnr, dt)
  #   cat(paste0(varnr,'\n'))
 #  if(varnr==6) browser();
   var<-dt[[varnr]]
-  vartype <- attr(var,'measure_type')
+  vartype <- attr(var,'measure_type', exact = TRUE)
   if (is.null(vartype))
   {
     #Error! Nie dodaliśmy typu do zmiennej!...
     return('')
   }
   is_num<-switch(vartype, 'F'=1, 'L'=1, 'I'=1, 'N'=1, 'D'=1,0)
-  mins<-attr(var, 'theoretical_min')
+  mins<-attr(var, 'theoretical_min', exact = TRUE)
   if (!is.null(mins) && is_num)
   {
     which_min=var<mins
@@ -75,7 +75,7 @@ fn_validate_TheoreticalMin<-function(varnr, dt)
     }
 
   }
-  maxs<-attr(var, 'theoretical_max')
+  maxs<-attr(var, 'theoretical_max', exact = TRUE)
   if (!is.null(maxs) && is_num)
   {
     which_max=var>maxs
@@ -115,7 +115,7 @@ fn_validate_TheoreticalMin<-function(varnr, dt)
 fn_validate_Required<-function(varnr, dt)
 {
   var<-dt[[varnr]]
-  required<-attr(var, 'required')
+  required<-attr(var, 'required', exact = TRUE)
   if (!is.null(required) )
   {
     which_required=is.na(var)
@@ -140,7 +140,7 @@ fn_validate_Type<-function(varnr, dt)
   #  cat(paste0(varnr,'\n'))
   #  if (varnr==151)  browser()
   var<-dt[[varnr]]
-  vartype <- attr(var,'measure_type')
+  vartype <- attr(var,'measure_type', exact = TRUE)
   if (is.null(vartype))
   {
     #Error! Nie dodaliśmy typu do zmiennej!...
@@ -230,7 +230,7 @@ fn_validate_LimitToLabels<-function(varnr, dt)
   #  cat(paste0(varnr,'\n'))
   #  if (varnr==12) browser();
   var<-dt[[varnr]]
-  vartype <- attr(var,'measure_type')
+  vartype <- attr(var,'measure_type', exact = TRUE)
   if (is.null(vartype))
   {
     #Error! Nie dodaliśmy typu do zmiennej!...
@@ -238,7 +238,7 @@ fn_validate_LimitToLabels<-function(varnr, dt)
     browser()
   }
 
-  should_be_labelled <- attr(var, 'limit_to_labels')
+  should_be_labelled <- attr(var, 'limit_to_labels', exact = TRUE)
 
   if (is.null(should_be_labelled))
   {
@@ -597,7 +597,7 @@ fn_validateCustom<-function(varnr, dt)
     {
       pos <- which(checkvar)
       cases <- row.names(dt)[checkvar]
-      vartype <- attr(var,'measure_type')
+      vartype <- attr(var,'measure_type', exact = TRUE)
 
       msg <- paste0(
         Hmisc::label(dt[[varname]]),
@@ -628,7 +628,7 @@ ValidateCustom<-function(dt)
         add_msg(dt=dt, varname = varname,
                 message = paste0("has a name that starts with the `.validate`, yet there is no predecessor variable to validate"))
       } else {
-        validations <- attr(dt[[base_varname]], 'validations')
+        validations <- attr(dt[[base_varname]], 'validations', exact = TRUE)
         setattr(dt[[base_varname]], 'validations', c(validations, list(list(varname=varname))))
       }
     } else {

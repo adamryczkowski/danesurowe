@@ -61,7 +61,7 @@ IsLimitedToLabels<-function(var)
   {
     return(TRUE)
   }
-  flag<-attr(var2,'limit_to_labels')
+  flag<-attr(var2,'limit_to_labels', exact = TRUE)
   if (is.null(flag)){
     return(FALSE)
   } else {
@@ -70,7 +70,7 @@ IsLimitedToLabels<-function(var)
 }
 
 GetDBName<-function(db, default=NULL){
-  label <- attr(db, 'label')
+  label <- attr(db, 'label', exact = TRUE)
   if (is.null(label)) {
     if(is.null(default)) {
       label<-deparse(substitute(db))
@@ -84,7 +84,7 @@ GetDBName<-function(db, default=NULL){
 
 IsRequired_1<-function(var)
 {
-  flag<-attr(var,'required')
+  flag<-attr(var,'required', exact = TRUE)
   if (is.null(flag)){
     return(FALSE)
   } else {
@@ -112,8 +112,8 @@ GetFOB<-function(var, flag_recalculate_uniques=FALSE, flag_update_dt=FALSE) {
   } else {
     count<-NA
   }
-  fob<-attr(var, 'f.o.b')
-  if(is.null(attr(var, 'f.o.b'))) {
+  fob<-attr(var, 'f.o.b', exact = TRUE)
+  if(is.null(attr(var, 'f.o.b', exact = TRUE))) {
     typ <- class2vartype(var)
     if(typ %in% c('F', 'L')) {
       labs <- GetLabels(var)
@@ -160,7 +160,7 @@ GetFOB<-function(var, flag_recalculate_uniques=FALSE, flag_update_dt=FALSE) {
 }
 
 IsLimitedToLabels_1<-function(var) {
-  val<-attr(var,'limit_to_labels')
+  val<-attr(var,'limit_to_labels', exact = TRUE)
   typ <- class2vartype(var)
   if (typ == 'F') {
     return(TRUE)
@@ -223,7 +223,7 @@ GetLevels<-function(var, flag_recalculate=TRUE)
 
 GetUnit<-function(var)
 {
-  unit<-attr(var, 'units')
+  unit<-attr(var, 'units', exact = TRUE)
   if(is.null(unit)) {
     return('')
   } else {
@@ -287,7 +287,7 @@ GetNALabels<-function(var)
 
 GetVarLabel_1<-function(dt, varname, quote_varname='', quote_varlabel='') {
   var<-dt[[varname]]
-  mylabel<-attr(var, 'label')
+  mylabel<-attr(var, 'label', exact = TRUE)
   if(is.null(mylabel)) {
     return(paste0(quote_varname, varname, quote_varname))
   } else {
@@ -341,9 +341,9 @@ GetLabelToValue<-function(var, value)
     {
       return(NA)
     } else {
-      if (as.integer(value) %in% seq_along(attr(var, 'levels')))
+      if (as.integer(value) %in% seq_along(attr(var, 'levels', exact = TRUE)))
       {
-        return(attr(var, 'levels')[[as.integer(value)]])
+        return(attr(var, 'levels', exact = TRUE)[[as.integer(value)]])
       } else {
         return(character(0))
       }
@@ -359,7 +359,7 @@ GetLabelToValue<-function(var, value)
 }
 
 GetExcelFormula_1<-function(var) {
-  frm <- attr(var, 'xls_formula')
+  frm <- attr(var, 'xls_formula', exact = TRUE)
   if(is.null(frm)){
     return(NA)
   } else {
@@ -377,7 +377,7 @@ GetExcelFormula<-function(var) {
 }
 
 GetRFormula_1<-function(var) {
-  frm <- attr(var, 'r_formula')
+  frm <- attr(var, 'r_formula', exact = TRUE)
   if(is.null(frm)){
     return(NA_character_)
   } else {
@@ -404,7 +404,7 @@ GetRFormulaSymbols<-function(var) {
 }
 
 GetTheoreticalMin_1<-function(var) {
-  val <- attr(var, 'theoretical_min')
+  val <- attr(var, 'theoretical_min', exact = TRUE)
   if(is.null(val)){
     if(is.integer(var)) {
       return(NA_integer_)
@@ -419,7 +419,7 @@ GetTheoreticalMin_1<-function(var) {
 GetTheoreticalMin<-Vectorize(GetTheoreticalMin_1)
 
 AreIntegersForced_1<-function(var){
-  val <- attr(var, 'force_integers')
+  val <- attr(var, 'force_integers', exact = TRUE)
   if(is.null(val)){
     return(as.logical(NA))
   } else {
@@ -430,7 +430,7 @@ AreIntegersForced_1<-function(var){
 AreIntegersForced<-Vectorize(AreIntegersForced_1)
 
 GetTheoreticalMax_1<-function(var) {
-  val <- attr(var, 'theoretical_max')
+  val <- attr(var, 'theoretical_max', exact = TRUE)
   if(is.null(val)){
     if(is.integer(var)) {
       return(NA_integer_)
@@ -451,13 +451,13 @@ IsVariableValidation<-function(dt, varnr) {
 }
 
 GetValidations<-function(var) {
-  val <- attr(var, 'validations')
+  val <- attr(var, 'validations', exact = TRUE)
   return(val)
 }
 
 GetProblems<-function(dt) {
-  contexts <- purrr::map_lgl(dt, function(v) is.null(attr(v,'warnings_context') ))
-  warnings <- purrr::map(dt, function(v) attr(v,'warnings') )
+  contexts <- purrr::map_lgl(dt, function(v) is.null(attr(v,'warnings_context', exact = TRUE) ))
+  warnings <- purrr::map(dt, function(v) attr(v,'warnings', exact = TRUE) )
   varnames <- names(contexts)[!contexts]
   warnings <- warnings[!contexts]
   long_varnames <- map_chr(varnames, function(varname) getProblemContextForVariable(dt, varname))
@@ -468,7 +468,7 @@ GetProblems<-function(dt) {
       return(pander::pandoc.list.return(paste0(w,'\n\n'),style = 'bullet' ,add.line.breaks=TRUE,  add.end.of.list = FALSE, loose=TRUE))
     }})
   df <- data.table("Variable description"= long_varnames, Problems=entries)
-  caption = paste0("Problems with the dataframe ", attr(dt, 'label'))
+  caption = paste0("Problems with the dataframe ", attr(dt, 'label', exact = TRUE))
   tab<-pander::pandoc.table.return(df, caption=caption, justify = 'll', use.hyphening = TRUE, style='grid', split.tables = Inf , split.cells = 80, keep.line.breaks = TRUE  )
   myrap<-pander::Pandoc$new()
   myrap$format <- 'docx'
@@ -531,7 +531,7 @@ GetMessagesForVariable<-function(dt, varname, flag_give_context = TRUE) {
     msg <- ''
   }
 
-  a<-attr(var, 'warnings')
+  a<-attr(var, 'warnings', exact = TRUE)
 
   if(!is.null(a)) {
     msg <- paste0(msg, paste0(ifelse(stringr::str_sub(a, -2)=='. ',stringr::str_sub(a, 1, -3), a), collapse = ', '), ". ")

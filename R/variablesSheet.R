@@ -23,7 +23,7 @@ readMeasureAndUnits<-function(file, dt)
     setattr(dt[[varnr]],'f.o.b',switch(measures[[varnr]],N=1,O=2,D=3,0))
     if (measures[[varnr]]=='O' && is.factor(dt[[varnr]]))
     {
-      setattr(dt[[varnr]], 'class', c(attr(dt[[varnr]],'class'), 'ordered'))
+      setattr(dt[[varnr]], 'class', c(attr(dt[[varnr]],'class', exact = TRUE), 'ordered'))
     }
   }
 

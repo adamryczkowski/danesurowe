@@ -28,7 +28,7 @@ report_pvalue_long_1<-function(pvalue, pvalue_levels=c(0.1, 0.05, 0.01, 0.001, 0
 report_pvalue_long <- Vectorize(report_pvalue_long_1, vectorize.args = 'pvalue')
 
 report_values<-function(values, ...) {
-  if(!is.null(attr(values,'verbatim'))) {
+  if(!is.null(attr(values,'verbatim', exact = TRUE))) {
     return(values)
   } else {
     UseMethod("report_values", values)

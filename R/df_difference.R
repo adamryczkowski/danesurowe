@@ -252,12 +252,12 @@ get_differentiated_names<-function(df1, df2) {
   name1<-danesurowe::GetDBName(df1)
   name2<-danesurowe::GetDBName(df2)
   if(name1==name2) {
-    name1 <- attr(df1, 'path')
+    name1 <- attr(df1, 'path', exact = TRUE)
     if(is.null(name1)) {
       name1='df1'
     }
     name1 <- basename(name1)
-    name2 = attr(df2, 'path')
+    name2 = attr(df2, 'path', exact = TRUE)
     if(is.null(name2)){
       name2 <- 'df2'
     }
@@ -265,11 +265,11 @@ get_differentiated_names<-function(df1, df2) {
   }
 
   if(name1==name2) {
-    name1 <- attr(df1, 'path')
+    name1 <- attr(df1, 'path', exact = TRUE)
     if(is.null(name1)) {
       name1='df1'
     }
-    name2 = attr(df2, 'path')
+    name2 = attr(df2, 'path', exact = TRUE)
     if(is.null(name2)){
       name2 <- 'df2'
     }
@@ -1323,7 +1323,7 @@ comment_one_diff<-function(rownr, diffdb, df1, df1keys, df2, df2keys, df2_data_t
   }
 
   colname <- diffdb$colname[[rownr]]
-  collabel <- attr(df2[['colname']], 'label')
+  collabel <- attr(df2[['colname']], 'label', exact = TRUE)
   rowname <- diffdb$rowname[[rownr]]
   df1rownr <- match(rowname, df1keys)
   df2rownr <- match(rowname, df2keys)
@@ -1505,7 +1505,7 @@ create_df_from_df_structure<-function(df, flag_add_nice_names=FALSE, default_df_
       warning(paste0("Atrybut ", attrname, " ma niejednorodny typ danych: ", paste0(classes, collapse=' i ')))
     }
     vec<-plyr::laply(df, .fun = function(var) {
-      val<-attr(var, attrname)
+      val<-attr(var, attrname, exact = TRUE)
       if(is.null(val)) {
         return(NA)
       } else {
