@@ -45,7 +45,7 @@ readRFormulas<-function(file, varcnt) {
   return(rformulas)
 }
 
-readTypes<-function(file, varcnt)
+readTypes<-function(file, varcnt, flag_keep_empty)
 {
   address<-danesurowe::getNamedRange(file, getOption('rng_IntendedVariableClass'))
   rng<-readxl::read_excel(path=address$file, sheet=address$sheetname, col_names = FALSE)

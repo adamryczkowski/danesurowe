@@ -1504,14 +1504,26 @@ create_df_from_df_structure<-function(df, flag_add_nice_names=FALSE, default_df_
       browser()
       warning(paste0("Atrybut ", attrname, " ma niejednorodny typ danych: ", paste0(classes, collapse=' i ')))
     }
-    vec<-plyr::laply(df, .fun = function(var) {
-      val<-attr(var, attrname, exact = TRUE)
-      if(is.null(val)) {
-        return(NA)
-      } else {
-        val
-      }
-    })
+    cat(paste0(attrname,'\n'))
+    if('list' %in% classes) {
+      vec<-plyr::llply(df, .fun = function(var) {
+        val<-attr(var, attrname, exact = TRUE)
+        if(is.null(val)) {
+          return(NA)
+        } else {
+          val
+        }
+      })
+    } else {
+      vec<-plyr::laply(df, .fun = function(var) {
+        val<-attr(var, attrname, exact = TRUE)
+        if(is.null(val)) {
+          return(NA)
+        } else {
+          val
+        }
+      })
+    }
     outdf[[attrname]]<-vec
   }
 
@@ -1566,7 +1578,9 @@ create_df_from_df_structure<-function(df, flag_add_nice_names=FALSE, default_df_
 
 df_structure_difference<-function(df1, df2, attributes_to_ignore='',
                                   flag_comment_new_cols=TRUE, flag_comment_deleted_cols=TRUE,
-                                  flag_explain_in_nice_names=TRUE, name_of_variable, name_of_variables){
+                                  flag_explain_in_nice_names=TRUE,
+                                  name_of_variable='question',
+                                  name_of_variables='question'){
   df1_struct <- create_df_from_df_structure(df1, flag_add_nice_names = flag_explain_in_nice_names)
   df2_struct <- create_df_from_df_structure(df2, flag_add_nice_names = flag_explain_in_nice_names)
 

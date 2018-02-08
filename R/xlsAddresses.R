@@ -156,3 +156,4 @@ readVariableGroups<-function(file, dt)
   setattr(dt, 'variablegroups', groups)
   return(groups)
 }
+

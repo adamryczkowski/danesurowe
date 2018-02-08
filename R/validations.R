@@ -137,7 +137,7 @@ fn_validate_Required<-function(varnr, dt)
 }
 fn_validate_Type<-function(varnr, dt)
 {
-  #  cat(paste0(varnr,'\n'))
+#  cat(paste0(varnr,'\n'))
   #  if (varnr==151)  browser()
   var<-dt[[varnr]]
   vartype <- attr(var,'measure_type', exact = TRUE)
@@ -573,9 +573,10 @@ set_Formulas<-function(dt, xlsformulas, rformulas)
 
 fn_validateCustom<-function(varnr, dt)
 {
-#  if(varnr==18) browser()
+#  if(varnr==9) browser()
 #  if(varnr==19) browser()
   #  browser()
+#  cat(paste0(varnr, '\n'))
   validations <- GetValidations(dt[[varnr]])
   if(IsVariableValidation(dt, varnr)) {
     if(!is.null(validations)) {
@@ -588,7 +589,7 @@ fn_validateCustom<-function(varnr, dt)
   basevarname <- colnames(dt)[[varnr]]
 
   for(validation in validations) {
-    varname <- validation$varname
+    varname <- validation
     #      browser()
     basevarNotNA <- !is.na(dt[[basevarname]])
     validatevar <- dt[[varname]]==0
@@ -622,6 +623,7 @@ ValidateCustom<-function(dt)
   base_varname <- NA
   for (varnr in seq_along(dt)){
     var <- dt[[varnr]]
+#    cat(paste0(varnr, '\n'))
     varname <- colnames(dt)[[varnr]]
     if(IsVariableValidation(dt, varnr)) {
       if(is.na(base_varname)) {
@@ -629,7 +631,7 @@ ValidateCustom<-function(dt)
                 message = paste0("has a name that starts with the `.validate`, yet there is no predecessor variable to validate"))
       } else {
         validations <- attr(dt[[base_varname]], 'validations', exact = TRUE)
-        setattr(dt[[base_varname]], 'validations', c(validations, list(list(varname=varname))))
+        setattr(dt[[base_varname]], 'validations', list(validations, list(list(varname=varname))))
       }
     } else {
       base_varname <- colnames(dt)[[varnr]]

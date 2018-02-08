@@ -64,13 +64,46 @@ readDaneSurowe3 <- function(file) {
 }
 
 
-readDaneSurowe4 <- function(file, flag_keep_tagged_na = FALSE) {
+readDaneSurowe4 <- function(file, flag_keep_tagged_na = FALSE, flag_add_warnings=FALSE, flag_keep_empty=TRUE) {
   ans<-readDataSheet(file)
   txt<-colnames(ans$dt)
   na.colnames<-c(ans$na.colnames,which(stringi::stri_count(txt, regex='^\\..*$')==1))
+  validation_pos<-which(stringi::stri_count(txt, regex='^\\.validation.*$')==1)
+  validation_names<-rep(NA_character_, length(txt))
+  for(i in seq_along(validation_pos)) {
+    pos<-validation_pos[[i]]
+    for(j in seq(pos-1, 1)){
+      if(j>=1) {
+        if(txt[[j]]!='.validation') {
+          newname<-txt[[pos]]
+          if(newname=='.validation') {
+            newname<-paste0('.validation_', txt[[j]], '_', pos-j)
+          }
+          tryname<-newname
+          k<-1
+          while(newname %in% c(na.colnames, validation_names )) {
+            tryname<-paste0(newname, '_', k)
+            k<-k+1
+          }
+          validation_names[[i]]<-tryname
+          break
+        }
+      } else {
+        break
+      }
+    }
+  }
+  validation_pos<-validation_pos[!is.na(validation_names)]
+  validation_names<-validation_names[!is.na(validation_names)]
+  colnames(ans$dt)[validation_pos]<-validation_names
+
+  na.colnames<-c(ans$na.colnames,which(stringi::stri_count(txt, regex='^\\..*$')==1))
+  validation_pos<-which(stringi::stri_count(txt, regex='^\\.validation.*$')==1)
+
+
   labels<-readLabelSheet4(file, ncol(ans$dt))
 
-  types<-readTypes(file, ncol(ans$dt))
+  types<-readTypes(file, ncol(ans$dt), flag_keep_empty=flag_keep_empty)
 #	browser()
   ans<-set_apply_labels(dt = ans$dt, labels=labels, vartypes = types, flag_keep_tagged_na=flag_keep_tagged_na)
   dt<-ans$dt
@@ -101,14 +134,25 @@ readDaneSurowe4 <- function(file, flag_keep_tagged_na = FALSE) {
   dt <- ValidateCustom(dt)
 
 #  browser()
-  vars_to_keep <- which(types == '0')
-  for(varnr in rev(vars_to_keep))
-  {
-    if(sum(!is.na(dt[[varnr]]))==0) {
-      dt[,(varnr):=NULL]
+  if(!flag_keep_empty) {
+    vars_to_keep <- setdiff(colnames(dt)[types == '0'], validation_names)
+    for(varnr in rev(vars_to_keep))
+    {
+      if(sum(!is.na(dt[[varnr]]))==0) {
+        dt[,(varnr):=NULL]
+      }
     }
   }
   setattr(dt,'path', file)
+
+  if(!flag_add_warnings) {
+    warnings<-rep('',  length(dt))
+    for(i in seq_along(colnames(dt))) {
+      cname<-colnames(dt)[[i]]
+      warnings[[i]]<-paste0(attr(dt[[cname]], 'warnings'), collapse = '\n')
+      setattr(dt[[cname]],'warnings', NULL)
+    }
+  }
 
   return(dt)
 }
@@ -132,7 +176,7 @@ set_apply_labels<-function(dt, labels, vartypes, flagUseTaggedNA=TRUE, in_varnam
 
   fn_baseclass<-function(varnr)
   {
-    #    if (varnr==132) browser();
+      #if (varnr==547) browser();
     #    if (colnames(dt)[[varnr]]=='q_88e') browser()
     #    cat(paste(varnr,'\n'))
     #First we find missings and convert them into proper tagged NA
@@ -183,8 +227,8 @@ set_apply_labels<-function(dt, labels, vartypes, flagUseTaggedNA=TRUE, in_varnam
       warning=function(w){NULL}
     )
 
-    # character  if there is at least one character
-    if (length(numvar)==0)
+    # character  if there is at least one character or type is character
+    if (length(numvar)==0 || vartypes[[varnr]]=='S')
     {
       if (vartypes[[varnr]]=='D')
       {
@@ -319,9 +363,9 @@ set_apply_labels<-function(dt, labels, vartypes, flagUseTaggedNA=TRUE, in_varnam
 
   fn<-function(varnr)
   {
-#    if (varnr==568) browser();
+    #if (varnr==573) browser();
 
-#    cat(paste0(varnr,'\n'))
+    #cat(paste0(varnr,'\n'))
 
     info<-fn_baseclass(varnr)
     var<-do.call(fn_labelled, info)
@@ -354,6 +398,22 @@ set_apply_labels<-function(dt, labels, vartypes, flagUseTaggedNA=TRUE, in_varnam
         dt[,(n):=NULL]
       }
     } else {
+#      if('logical' %in% class(var) && sum(!is.na(var))==0 ){
+        if(vartypes[[varnr]]=='S') {
+          var2<-as.character(var)
+        } else if (vartypes[[varnr]]=='D') {
+          var2<-as.Date(var)
+        } else if (vartypes[[varnr]]=='I') {
+          var2<-as.integer(var)
+        } else if (vartypes[[varnr]]=='N') {
+          var2<-as.numeric(var)
+        } else {
+          var2<-var
+#          browser()
+        }
+        copy_obj_attributes(obj_source = var, obj_dest = var2)
+        var<-var2
+ #     }
       dt[[varnr]]<-var
     }
 

@@ -266,7 +266,9 @@ GetNALevels<-function(var)
   {
     levs<-labelled::val_labels(var)
     levs<-levs[is.na(levs)]
-    levs[seq_along(levs)]<-haven::na_tag(levs)
+    if(length(levs)>0) {
+      levs[seq_along(levs)]<-haven::na_tag(levs)
+    }
     return(levs)
   } else {
     return(var[FALSE]) #Returns zero-length vector of the correct class
@@ -303,12 +305,14 @@ GetVarLabel<-function(dt, varname=NULL,  quote_varname='', quote_varlabel='') {
   return(fn(dt=dt, varname=varname, quote_varname=quote_varname, quote_varlabel=quote_varlabel))
 }
 
-
 # Returns label corresponding to the value in variable var, or returns character(0) if not found.
 # If possible, matches tagged_na.
 # For simple NA returns just the same, NA
-GetLabelToValue<-function(var, value)
+ValueToLabel<-function(var, value)
 {
+  all_labels<-GetLabels(var, flag_recalculate = FALSE)
+
+
   if ('labelled' %in% class(var))
   {
     if (is.na(value))
@@ -354,6 +358,24 @@ GetLabelToValue<-function(var, value)
       return(NA)
     } else {
       return(character(0))
+    }
+  }
+}
+
+# Returns value corresponding to the label in variable var, or returns NULL.
+# Function may return tagged_na, so if you get NA check if it is not tagged.
+LabelToValue<-function(var, label)
+{
+  checkmate::assertString(label)
+  all_labels<-GetLevels(var)
+  if(label %in% names(all_labels)) {
+    return(all_labels[[label]])
+  } else {
+    all_nalabels<-GetNALevels(var)
+    if(label %in% names(all_nalabels)) {
+      return(haven::tagged_na(all_nalabels[[label]]))
+    } else {
+      return(NULL)
     }
   }
 }
@@ -451,7 +473,7 @@ IsVariableValidation<-function(dt, varnr) {
 }
 
 GetValidations<-function(var) {
-  val <- attr(var, 'validations', exact = TRUE)
+  val <- unlist(attr(var, 'validations', exact = TRUE))
   return(val)
 }
 
