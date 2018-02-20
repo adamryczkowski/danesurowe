@@ -1,7 +1,7 @@
 Package: danesurowe
 Type: Package
 Title: Reads database from Excel format "dane surowe"
-Version: 0.1.0
+Version: 0.8.0
 Author: Adam Ryczkowski
 Maintainer: <adam@statystyka.net>
 Description: More about what it does (maybe more than one line)

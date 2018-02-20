@@ -24,15 +24,19 @@ readDataSheet<-function(file)
   my.rownames<-my.rownames[!is.na(my.rownames)]
 
   flagIgnoreRownames=FALSE
-  if (is.numeric(my.rownames))
-  {
-    tmpdiff<-diff(my.rownames)
-    mtmpdiff<-max(tmpdiff)
-    if (mtmpdiff==min(tmpdiff) && (mtmpdiff==1))
+  if(length(my.rownames)>1) {
+    if (is.numeric(my.rownames))
     {
-      #All rownames are consecutive integers, so ignore them
-      flagIgnoreRownames=TRUE
+      tmpdiff<-diff(my.rownames)
+      mtmpdiff<-max(tmpdiff)
+      if (mtmpdiff==min(tmpdiff) && (mtmpdiff==1))
+      {
+        #All rownames are consecutive integers, so ignore them
+        flagIgnoreRownames=TRUE
+      }
     }
+  } else {
+    flagIgnoreRownames=is.numeric(my.rownames)
   }
   if(!flagIgnoreRownames)
   {

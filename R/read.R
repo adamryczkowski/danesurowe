@@ -363,9 +363,9 @@ set_apply_labels<-function(dt, labels, vartypes, flagUseTaggedNA=TRUE, in_varnam
 
   fn<-function(varnr)
   {
-    #if (varnr==573) browser();
+#    if (varnr==6) browser();
 
-    #cat(paste0(varnr,'\n'))
+#    cat(paste0(varnr,'\n'))
 
     info<-fn_baseclass(varnr)
     var<-do.call(fn_labelled, info)

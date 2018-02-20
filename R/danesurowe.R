@@ -204,7 +204,7 @@ GetLabelsString_1<-function(var, flag_all_labels=FALSE) {
 
 GetLabelsString<-Vectorize(GetLabelsString_1)
 
-GetLevels<-function(var, flag_recalculate=TRUE)
+GetLevels<-function(var, flag_recalculate=TRUE, flag_include_NA=FALSE)
 {
   if('factor' %in% class(var))
   {
@@ -215,7 +215,10 @@ GetLevels<-function(var, flag_recalculate=TRUE)
   } else if ('labelled' %in% class(var))
   {
     l<-labelled::val_labels(var)
-    return(l[!is.na(l)])
+    if(!flag_include_NA) {
+      l<-l[!is.na(l)]
+    }
+    return(l)
   } else {
     return(var[FALSE]) #Returns zero-length vector of the correct class
   }
