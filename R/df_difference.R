@@ -35,7 +35,7 @@ df_difference<-function(df1, df2, df1_key=NULL, df2_key=NULL, columns_to_ignore=
                         flag_explain_structure_in_nice_names = TRUE,
                         return_format=c('raw','md'),
                         markdown_header_level = 1,
-                        attributes_to_ignore_in_structure=character(0),
+                        attributes_to_ignore_in_structure='validation',
                         threshold_count_for_partial_context=3,
                         flag_comment_new_rows = TRUE,
                         flag_comment_deleted_rows = TRUE,
@@ -475,7 +475,7 @@ DiffMatrix<-function(df1_sorted, df2_sorted, col_names){
 
   diffdb<-numeric(0)
   for(colname in col_names)  {
-    #    cat(paste0(colname,'\n'))
+    cat(paste0(colname,'\n'))
     #if(colname=='q_110c') browser()
     var1<-df1_sorted[[colname]]
     var2<-df2_sorted[[colname]]
@@ -935,15 +935,15 @@ convert_var_to_var<-function(srcvar, srcrow, destvar){
             statis <- convert_var_to_var.status$TAGGED_NA_ON_NUMERIC
             value <- srcval
           } else if (srcdesttype == 'LL')   {
-            browser()
-            #TODO:
-            # 1. Znajdź etykietę tagu w zmiennej źródłowej
-            # 2. Znajdź tą samą etykietę tagu w zmiennej docelowej
-            # 3. Zwróć level tego tagu dla zmiennej docelowej
             strLabels <- GetNALevels(srcvar)
             if (srctag %in% strLabels)  {
               pos <- match(srctag, strLabels)
-              value <- NA #TDO
+              value <-strLabels[[pos]]
+              status<-convert_var_to_var.status$OK
+            } else {
+              value <- NA
+              status<-convert_var_to_var.status$LOST_TAGGED_NA
+              browser() #Nie mogę znaleźć tego samego tagu w drugiej bazie danych
             }
           } else if (srcdesttype == 'NL')  {
             browser()
@@ -951,13 +951,12 @@ convert_var_to_var<-function(srcvar, srcrow, destvar){
             # 2. Znajdź tag wśród wartości zmiennej docelowej -
             #    jeśli znalazłeś - ok,
             #    jeśli nie znalazłeś, to zwróć ostrzeżenie
+          } else if (desttype %in% c('L', 'N')) {
+            value <- NA
+            status <- convert_var_to_var.status$TAGGED_NA_IN_NUMERIC
+          } else {
+            browser()
           }
-        }
-        if (desttype %in% c('L', 'N')) {
-          value <- NA
-          status <- convert_var_to_var.status$TAGGED_NA_IN_NUMERIC
-        } else {
-          browser()
         }
       }
     }

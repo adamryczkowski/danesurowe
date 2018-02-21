@@ -176,7 +176,7 @@ set_apply_labels<-function(dt, labels, vartypes, flagUseTaggedNA=TRUE, in_varnam
 
   fn_baseclass<-function(varnr)
   {
-      #if (varnr==547) browser();
+    #if (varnr==547) browser();
     #    if (colnames(dt)[[varnr]]=='q_88e') browser()
     #    cat(paste(varnr,'\n'))
     #First we find missings and convert them into proper tagged NA
@@ -214,7 +214,7 @@ set_apply_labels<-function(dt, labels, vartypes, flagUseTaggedNA=TRUE, in_varnam
         , error=function(e){return(NULL)})
       if (!is.null(varDate))
       {
-      	copy_obj_attributes(var, varDate)
+        copy_obj_attributes(var, varDate)
 
         return(list(var=varDate, NAlabels=myNAlabels, NAlevels=myNAlevels, levels=mylevels, labels=mylabels ))
       }
@@ -235,7 +235,7 @@ set_apply_labels<-function(dt, labels, vartypes, flagUseTaggedNA=TRUE, in_varnam
         var<-add_msg_var(var = colnames(dt)[[varnr]], message =
                            paste0("cannot be converted to Date."),
                          flag_show_type=TRUE, flag_error=TRUE )
-                return(list(var=var, NAlabels=myNAlabels, NAlevels=myNAlevels, levels=mylevels, labels=mylabels ))
+        return(list(var=var, NAlabels=myNAlabels, NAlevels=myNAlevels, levels=mylevels, labels=mylabels ))
       }
 
       #Variable is a character string
@@ -262,15 +262,15 @@ set_apply_labels<-function(dt, labels, vartypes, flagUseTaggedNA=TRUE, in_varnam
       {
         msg<-paste0("doesn't support tagged NA. Replacing all tagged NA with plain NA")
         numvar<-add_msg_var(numvar,
-                message = msg,
-                flag_show_type=TRUE, flag_warning=TRUE)
+                            message = msg,
+                            flag_show_type=TRUE, flag_warning=TRUE)
       }
       varDate<-tryCatch(
         as.Date(numvar,origin="1899-12-30") #We assume Excel for Windows format
         , error=function(e){
           newvar<-add_msg_var(var,
-                  message = paste0("cannot be converted into date"),
-                  flag_show_type=TRUE, flag_warning=TRUE);
+                              message = paste0("cannot be converted into date"),
+                              flag_show_type=TRUE, flag_warning=TRUE);
           copy_obj_attributes(origvar, newvar)
 
           return(list(newvar))
@@ -297,10 +297,10 @@ set_apply_labels<-function(dt, labels, vartypes, flagUseTaggedNA=TRUE, in_varnam
     #Now we know, we have a proper numeric number.
     if ((length(myNAlevels)>0) && vartypes[[varnr]] %in% c('I','F') && flagUseTaggedNA){
       msg<-paste0("doesn't support tagged NAs. Promoting integer into the numeric")
-#      warning(msg)
+      #      warning(msg)
       numvar<-add_msg_var(numvar,
-              message = msg,
-              flag_show_type=TRUE, flag_warning=TRUE)
+                          message = msg,
+                          flag_show_type=TRUE, flag_warning=TRUE)
       forceNumeric=TRUE
     } else {
       forceNumeric=FALSE
@@ -318,8 +318,8 @@ set_apply_labels<-function(dt, labels, vartypes, flagUseTaggedNA=TRUE, in_varnam
     if (length(levels)==0 && length(NAlevels)>0)
     {
       numvar <- add_msg(numvar,
-              message = paste0("doesn't support named missings. Discarding the names for the missings (but leaving the attributes and tagged na)"),
-              flag_show_type=TRUE, flag_warning=TRUE);
+                        message = paste0("doesn't support named missings. Discarding the names for the missings (but leaving the attributes and tagged na)"),
+                        flag_show_type=TRUE, flag_warning=TRUE);
     }
 
     return(list(var=numvar, NAlabels=myNAlabels, NAlevels=myNAtags, levels=mylevels, labels=mylabels ))
@@ -338,7 +338,7 @@ set_apply_labels<-function(dt, labels, vartypes, flagUseTaggedNA=TRUE, in_varnam
         setattr(var, "labels", setNames(haven::tagged_na(NAlevels),NAlabels))
         varret <- var
       }
-    	copy_obj_attributes(var, varret)
+      copy_obj_attributes(var, varret)
       return(varret)
     }
 
@@ -363,9 +363,9 @@ set_apply_labels<-function(dt, labels, vartypes, flagUseTaggedNA=TRUE, in_varnam
 
   fn<-function(varnr)
   {
-#    if (varnr==6) browser();
+    #if (varnr==289) browser();
 
-#    cat(paste0(varnr,'\n'))
+    #    cat(paste0(varnr,'\n'))
 
     info<-fn_baseclass(varnr)
     var<-do.call(fn_labelled, info)
@@ -402,11 +402,23 @@ set_apply_labels<-function(dt, labels, vartypes, flagUseTaggedNA=TRUE, in_varnam
         if(vartypes[[varnr]]=='S') {
           var2<-as.character(var)
         } else if (vartypes[[varnr]]=='D') {
-          var2<-as.Date(var)
+          if(!'Date'%in%class(var)) {
+            var2<-as.Date(var)
+          } else {
+            var2<-var
+          }
         } else if (vartypes[[varnr]]=='I') {
-          var2<-as.integer(var)
+          if(!'integer'%in%class(var)) {
+            var2<-as.integer(var)
+          } else {
+            var2<-var
+          }
         } else if (vartypes[[varnr]]=='N') {
-          var2<-as.numeric(var)
+          if(!'numeric'%in%class(var)) {
+            var2<-as.numeric(var)
+          } else {
+            var2<-var
+          }
         } else {
           var2<-var
 #          browser()

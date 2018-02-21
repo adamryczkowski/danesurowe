@@ -159,7 +159,7 @@ format_item_list<-function(df, colname_with_includes=NULL, includes=NULL,  flag_
                            txt_attribute_infix = ':\uA0', txt_attribute_bare_quote = '`',
                            txt_attribute_label_quote = '',
                            prefix_all_except = 'wszystkie poza: '
-                           ) {
+) {
   if(is.atomic(df)) {
     df<-tibble::tibble(val=df)
   }
@@ -220,7 +220,7 @@ format_item_list<-function(df, colname_with_includes=NULL, includes=NULL,  flag_
     tabdf[[cn]]<-report_values(tabdf[[cn]])
   }
   tabdf<-tibble::as_tibble(tabdf)
-#  tabdf <- tibble::as_tibble(dplyr::mutate_all(tabdf, report_values)) #Formatujemy tabelę
+  #  tabdf <- tibble::as_tibble(dplyr::mutate_all(tabdf, report_values)) #Formatujemy tabelę
 
   if(sum(includes)>threshold_for_table) {
     if(!flag_use_ellipsis) {
@@ -375,9 +375,9 @@ format_var_list<-function(colnames, longcolnames=NULL, dt=NULL,
     }
   }
   return(paste0(length(colnames), ' ', name_of_variables, ': ',
-    paste0(head(mynames, 7), collapse=', '),
-    ", ...",
-    paste0(tail(mynames,3), collapse=", ")
+                paste0(head(mynames, 7), collapse=', '),
+                ", ...",
+                paste0(tail(mynames,3), collapse=", ")
   ))
 }
 
@@ -423,9 +423,9 @@ format_values_as_one_string<-function(values, complementary_values=NULL, plural_
     }
   }
   return(paste0(length(formatted_values), ' ', plural_form,': ',
-    paste0(head(formatted_values, 7), collapse=', '),
-    ", ...",
-    paste0(tail(formatted_values,3), collapse=", ")
+                paste0(head(formatted_values, 7), collapse=', '),
+                ", ...",
+                paste0(tail(formatted_values,3), collapse=", ")
   ))
 }
 
@@ -484,7 +484,7 @@ format_values.Date<-function(values)
 
 format_values.factor<-function(values)
 {
-#  browser()
+  #  browser()
   fmt<-attr(values, 'factor_sprintf_format', exact = TRUE)
   if(is.null(fmt)) {
     fmt<-"%2$s (%1$s)"
@@ -496,7 +496,7 @@ format_values.factor<-function(values)
 
 format_values.labelled<-function(values)
 {
-#  browser()
+  #  browser()
   out <- as.character(values)
 
   if(sum(haven::is_tagged_na(values))>0)
@@ -693,10 +693,10 @@ join_messages<-function(strvec1, strvec2, dt)
 nice_varname<-function(dt, varnr)
 {
   return(paste0(" \"",
-         Hmisc::label(dt[[varnr]]),
-         "\" (",
-         names(dt)[[varnr]],
-         ")"))
+                Hmisc::label(dt[[varnr]]),
+                "\" (",
+                names(dt)[[varnr]],
+                ")"))
 }
 
 vartype2class <- function(vartype)
@@ -710,7 +710,7 @@ vartype2class <- function(vartype)
                  'N'='numeric',
                  'S'='character',
                  'T'='POSIXct',
-                           '##'
+                 '##'
   )     )
 }
 
@@ -728,7 +728,7 @@ class2vartype_str<-function(classes, all_is_na)
   if(classes_sorted %in% c('factor', 'factor,ordered'))
   {
     return('F')
-  } else if(classes_sorted == 'labelled')
+  } else if(classes_sorted == 'labelled' || classes_sorted == 'labelled,numeric')
   {
     return('L')
   } else if(classes_sorted == 'integer')
@@ -778,17 +778,17 @@ is_vartype_numeric <- function(vartype)
 
 #Function compares two vectors for equality
 compareNA <- function(v1,...) {
-	UseMethod("compareNA", v1)
+  UseMethod("compareNA", v1)
 }
 
 compareNA.numeric <- function(v1, ..., v2) {
-	diff <- as.integer(ifelse(is.na(v1) & is.na(v2), FALSE, ! (abs(v1 - v2) < 1E-6 & (is.na(v1) == is.na(v2)) )))
-	return(diff)
+  diff <- as.integer(ifelse(is.na(v1) & is.na(v2), FALSE, ! (abs(v1 - v2) < 1E-6 & (is.na(v1) == is.na(v2)) )))
+  return(diff)
 }
 
 compareNA.default <- function(v1, ..., v2) {
-	diff <- as.integer(ifelse(is.na(v1) & is.na(v2), FALSE, ! ((v1 == v2) & (is.na(v1) == is.na(v2)) )))
-	return(diff)
+  diff <- as.integer(ifelse(is.na(v1) & is.na(v2), FALSE, ! ((v1 == v2) & (is.na(v1) == is.na(v2)) )))
+  return(diff)
 }
 
 compareNA.character <- function(v1, ..., v2) {
@@ -886,21 +886,22 @@ copy_dt_attributes<-function(dt_source, dt_dest, which_colnames='') {
   dt_dest
 }
 
-copy_var_attributes<-function(var_source, var_dest_name, dt_dest) {
+copy_var_attributes<-function(var_source, var_dest_name, dt_dest, force_include_cols=character(0)) {
   a <- attributes(var_source)
-  attrnames<-setdiff(names(a),c('class','dim', 'dimnames','names', 'levels', 'labels'))
+  attrnames<-setdiff(names(a),setdiff(c('class','dim', 'dimnames','names', 'levels', 'labels'), force_include_cols))
   for(aname in attrnames) {
     setattr(dt_dest[[var_dest_name]], aname, a[[aname]])
   }
   return(dt_dest)
 }
 
-copy_obj_attributes<-function(obj_source, obj_dest) {
+copy_obj_attributes<-function(obj_source, obj_dest, force_include_cols=character(0)) {
   a <- attributes(obj_source)
-  attrnames<-setdiff(names(a),c('class','dim', 'dimnames','names', 'levels', 'labels'))
+  attrnames<-setdiff(names(a),setdiff(c('class','dim', 'dimnames','names', 'levels', 'labels'), force_include_cols))
   for(aname in attrnames) {
     setattr(obj_dest, aname, a[[aname]])
   }
+  obj_dest
 }
 
 nice_class_names_1<-function(var, language=c('EN','PL')) {

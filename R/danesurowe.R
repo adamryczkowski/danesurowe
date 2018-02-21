@@ -220,7 +220,11 @@ GetLevels<-function(var, flag_recalculate=TRUE, flag_include_NA=FALSE)
     }
     return(l)
   } else {
-    return(var[FALSE]) #Returns zero-length vector of the correct class
+    if(is.null(attr(var, 'labels'))) {
+      return(var[FALSE]) #Returns zero-length vector of the correct class
+    } else {
+      return(attr(var, 'labels'))
+    }
   }
 }
 
