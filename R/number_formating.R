@@ -1,4 +1,7 @@
 report_pvalue_long_1<-function(pvalue, pvalue_levels=c(0.1, 0.05, 0.01, 0.001, 0.0001), pvalue_signs=c(NA, '*', '**', '†', '‡')) {
+  if(is.na(pvalue)) {
+    return('')
+  }
   if(pvalue == 0) {
     ndigits <- 1000
     pvalue <- .Machine$double.xmin
