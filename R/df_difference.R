@@ -1486,7 +1486,7 @@ create_df_from_df_structure<-function(df, flag_add_nice_names=FALSE, default_df_
                        required=IsRequired(df),
                        limit_to_labels=IsLimitedToLabels(df),
                        unit=GetUnits(df),
-                       xls_formula=GetExcelFormula(df), r_formula=GetRFormula(df),
+                       xls_formula=GetExcelFormula(as.list(df)), r_formula=GetRFormula(as.list(df)),
                        labels_string=as.character(GetLabelsString(df)))
   all_attributes<-getOption('df_used_attributes')
 
