@@ -55,12 +55,12 @@ make_dummy_variables<-function(dt, flag_fix_NA=TRUE) {
   tolerated_fobs<- if (flag_tolerate_ordinal) {c(0,2)} else {0}
   if (flag_tolerate_factor) {tolerated_fobs <- c(tolerated_fobs, 1)}
 
-  fobs<-map_dbl(args$zn, ~danesurowe::GetFOB(mydt[[.]], flag_recalculate_uniques = TRUE))
+  fobs<-purrr::map_dbl(args$zn, ~danesurowe::GetFOB(mydt[[.]], flag_recalculate_uniques = TRUE))
 
   ordinals<-args$zn[fobs==2]
   ans<-list()
   if(length(ordinals)>0) {
-    a<-mydt %>% select_(.dots=ordinals) %>% map(as.integer) %>% as.data.table
+    a<-mydt %>% select_(.dots=ordinals) %>% purrr::map(as.integer) %>% as.data.table
     ans<-c(ans, a)
   }
   nominals<-args$zn[fobs==1]
@@ -104,7 +104,7 @@ make_dummy_variables<-function(dt, flag_fix_NA=TRUE) {
       }
     }
     mydt<-ans2
-    a<-sum(map_dbl(mydt, ~sum(is.na(.))))
+    a<-sum(purrr::map_dbl(mydt, ~sum(is.na(.))))
     if(a>0) {
       stop("Coś nie tak poszło z usuwaniem braków")
     }

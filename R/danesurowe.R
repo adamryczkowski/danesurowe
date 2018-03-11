@@ -398,7 +398,7 @@ GetExcelFormula_1<-function(var) {
 
 GetExcelFormula<-function(var) {
   if('list' %in% class(var)) {
-    ans<-map_chr(var, GetExcelFormula_1)
+    ans<-purrr::map_chr(var, GetExcelFormula_1)
   } else {
     ans<-GetExcelFormula_1(var)
   }
@@ -416,7 +416,7 @@ GetRFormula_1<-function(var) {
 
 GetRFormula<-function(var) {
   if('list' %in% class(var)) {
-    ans<-map_chr(var, GetRFormula_1)
+    ans<-purrr::map_chr(var, GetRFormula_1)
   } else {
     ans<-GetRFormula_1(var)
   }
@@ -489,8 +489,8 @@ GetProblems<-function(dt) {
   warnings <- purrr::map(dt, function(v) attr(v,'warnings', exact = TRUE) )
   varnames <- names(contexts)[!contexts]
   warnings <- warnings[!contexts]
-  long_varnames <- map_chr(varnames, function(varname) getProblemContextForVariable(dt, varname))
-  entries <- map_chr(warnings, function(w) {
+  long_varnames <- purrr::map_chr(varnames, function(varname) getProblemContextForVariable(dt, varname))
+  entries <- purrr::map_chr(warnings, function(w) {
     if(length(w)==1) {
       return(w)
     } else {

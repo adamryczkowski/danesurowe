@@ -119,7 +119,7 @@ df_difference<-function(df1, df2, df1_key=NULL, df2_key=NULL, columns_to_ignore=
     diffs <- ans$diffs[rev(order(diffs_lengths))]
 
     if(length(diffs)>0) {
-      cl<-kmeans(log(diffs %>% map('items') %>% map_dbl(length)),length(diffs)^(1/2.5))
+      cl<-kmeans(log(diffs %>% purrr::map('items') %>% purrr::map_dbl(length)),length(diffs)^(1/2.5))
       centers<-order(as.numeric(cl$centers))
       lengths<-plyr::mapvalues(cl$cluster, centers, seq_along(centers))
 
@@ -131,9 +131,9 @@ df_difference<-function(df1, df2, df1_key=NULL, df2_key=NULL, columns_to_ignore=
         }
       }
 
-      indexes<-purrr::map2_dbl(diffs %>% map_lgl('type_1row'), diffs %>% map_chr('key'), get_key_pos)
+      indexes<-purrr::map2_dbl(diffs %>% purrr::map_lgl('type_1row'), diffs %>% purrr::map_chr('key'), get_key_pos)
 
-      diffs<-diffs[order(-lengths, diffs %>% map_lgl('type_1row'), indexes ) ]
+      diffs<-diffs[order(-lengths, diffs %>% purrr::map_lgl('type_1row'), indexes ) ]
     }
 
     if(return_format=='md') {
@@ -1557,7 +1557,7 @@ create_df_from_df_structure<-function(df, flag_add_nice_names=FALSE, default_df_
     known_classes<-class_levels[which_known]
     unknown_classes<-all_classes[setdiff(seq_along(all_classes), which_known)]
 
-    myclasses_labels<-c(names(class_levels[map_int(known_classes, ~which(.==class_levels))]),unknown_classes)
+    myclasses_labels<-c(names(class_levels[purrr::map_int(known_classes, ~which(.==class_levels))]),unknown_classes)
     myclasses_names<-c(known_classes, unknown_classes)
     setNames(myclasses_names, myclasses_labels)
 
