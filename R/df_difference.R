@@ -1495,10 +1495,10 @@ create_df_from_df_structure<-function(df, flag_add_nice_names=FALSE, default_df_
     filtered_names<-setdiff(names(a), all_attributes)
     a[filtered_names]
   } )
-  other_attributes<-reduce(ans, function(x1, x2) unique(c(x1, names(x2))), .init = names(ans[[1]]) )
+  other_attributes<-purrr::reduce(ans, function(x1, x2) unique(c(x1, names(x2))), .init = names(ans[[1]]) )
   for(i in seq_along(other_attributes)) {
     attrname <- other_attributes[[i]]
-    classes<-setdiff(reduce(ans, function(x1, x2) unique(c(x1, class(x2[[attrname]]))), .init = class(ans[[1]][[attrname]])), 'NULL')
+    classes<-setdiff(purrr::reduce(ans, function(x1, x2) unique(c(x1, class(x2[[attrname]]))), .init = class(ans[[1]][[attrname]])), 'NULL')
     if(length(classes)>1) {
       browser()
       warning(paste0("Atrybut ", attrname, " ma niejednorodny typ danych: ", paste0(classes, collapse=' i ')))
