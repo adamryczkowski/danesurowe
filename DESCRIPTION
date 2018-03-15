@@ -16,7 +16,8 @@ Imports:
 	  stringi,
 	  stringr,
 	  labelled,
-	  haven
+	  haven,
+	  Hmisc
 Suggests:
     testthat
 Depends:
