@@ -288,6 +288,10 @@ format_attr_list<-function(df, nrow=1, quote_bare_name='`', quote_label='', infi
       x
     }})
 
+  colnames_to_remove<-stringr::str_detect(colnames(df), pattern = stringr::regex("^\\."))
+  mycolnames[colnames_to_remove]<-""
+  infixes[colnames_to_remove]<-""
+
   ans <- paste0(mycolnames, infixes, purrr::map_chr(df[nrow,], as.character))
   return(ans)
 }

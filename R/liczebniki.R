@@ -17,17 +17,17 @@ liczebnik<-function(liczba, mianownik, dopelniacz, lmnoga, flag_liczby_slowami=F
   if(do_stu==1 && liczba < 100) {
     out<-paste0(out, " ", mianownik)
   } else if (do_stu<5 && do_stu>0) {
-    out<-paste0(out, " ", dopelniacz)
-  } else if (do_stu<22) {
     out<-paste0(out, " ", lmnoga)
+  } else if (do_stu<22) {
+    out<-paste0(out, " ", dopelniacz)
   } else {
     cyfra <- liczba %% 10
     if (cyfra <2 ) {
-      out <- paste0(out, " ", lmnoga)
-    } else if (cyfra < 5) {
       out <- paste0(out, " ", dopelniacz)
-    } else {
+    } else if (cyfra < 5) {
       out <- paste0(out, " ", lmnoga)
+    } else {
+      out <- paste0(out, " ", dopelniacz)
     }
   }
   return(out)
