@@ -12,7 +12,7 @@ df_merge<-function(df1, df2, df1_key=NULL, df2_key=NULL, flag_remove_non_existin
   )
   browser()
 
-  valid_db <- diff_db$diffdb %>% filter(status==0)
+  valid_db <- dplyr::filter(diff_db$diffdb, status==0)
 
   dest_db <- copy(df2)
 
@@ -23,7 +23,7 @@ df_merge<-function(df1, df2, df1_key=NULL, df2_key=NULL, flag_remove_non_existin
       browser()
     }
   }
-  unvalid_db <- diff_db$diffdb %>% filter(status!=0)
+  unvalid_db <-  dplyr::filter(diff_db$diffdb, status!=0)
   return(list(db = dest_db, unprocessed_rows = unvalid_db))
 }
 

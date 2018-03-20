@@ -718,23 +718,41 @@ vartype2class <- function(vartype)
   )     )
 }
 
-#Returns a letter that encodes data type.
-class2vartype<-function(var)
-{
-  class2vartype_str(class(var), all(is.na(var)))
+VariableHasLabels<-function(var) {
+  if(is.factor(var)) {
+    return(TRUE)
+  }
+  return(!is.null(labelled::val_labels(var)))
 }
 
 #Returns a letter that encodes data type.
-class2vartype_str<-function(classes, all_is_na)
+class2vartype<-function(var)
 {
+  if('data.frame' %in% class(var)) {
+    return(purrr::map_chr(as.list(var), class2vartype))
+  } else {
+    has_labels<-VariableHasLabels(var)
+    class2vartype_str(class(var), all(is.na(var)), has_labels=has_labels)
+  }
+}
+
+#Returns a letter that encodes data type.
+class2vartype_str<-function(classes, all_is_na, has_labels=NA)
+{
+  is_labelled<-'labelled' %in% classes
+  if(is_labelled) {
+    if(!is.na(has_labels)) {
+      if(!has_labels)  {
+        is_labelled<-FALSE
+      }
+    }
+  }
+  classes <- setdiff(classes, 'labelled')
   classes_sorted <- paste0(sort(classes), collapse=',')
 
   if(classes_sorted %in% c('factor', 'factor,ordered'))
   {
     return('F')
-  } else if(classes_sorted == 'labelled' || classes_sorted == 'labelled,numeric')
-  {
-    return('L')
   } else if(classes_sorted == 'integer')
   {
     return('I')
@@ -757,6 +775,9 @@ class2vartype_str<-function(classes, all_is_na)
     } else {
       return('B')
     }
+  } else if(is_labelled)
+  {
+    return('L')
   } else {
     browser()
     return('')

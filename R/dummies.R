@@ -1,7 +1,7 @@
 regression_recode_factor_1<-function(varname, dt, count_threshold=1) {
   var<-dt[[varname]]
   mylabel<-danesurowe::GetVarLabel(dt, varname)
-  levels<-as_tibble(table(var)) %>% filter(n>count_threshold)
+  levels<-dplyr::filter(dplyr::as_tibble(table(var)), n>count_threshold)
   base_level<-arrange(levels, -n)$var[[1]]
   levels<-levels[2:nrow(levels),]
   newname<-paste0(varname,'_', padded_count(1, nrow(levels)))
@@ -60,7 +60,7 @@ make_dummy_variables<-function(dt, flag_fix_NA=TRUE) {
   ordinals<-args$zn[fobs==2]
   ans<-list()
   if(length(ordinals)>0) {
-    a<-mydt %>% select_(.dots=ordinals) %>% purrr::map(as.integer) %>% as.data.table
+    a<-as.data.table(purrr::map(dplyr::select_(mydt, .dots=ordinals), as.integer))
     ans<-c(ans, a)
   }
   nominals<-args$zn[fobs==1]
@@ -75,9 +75,9 @@ make_dummy_variables<-function(dt, flag_fix_NA=TRUE) {
   }
   numerics<-args$zn[fobs==0]
 
-  ans2<-as.data.table(c(ans, as.list(mydt %>% select_(.dots=c(numerics) ))))
+  ans2<-as.data.table(c(ans, as.list(dplyr::select_(mydt, .dots=c(numerics) ))))
 
-  numdb<-mydt %>% select_(.dots=c(numerics, ordinals) )
+  numdb<-dplyr::select_(mydt, .dots=c(numerics, ordinals) )
 
   if(flag_fix_NA) {
     missing_pattern<-mice::md.pattern(numdb)

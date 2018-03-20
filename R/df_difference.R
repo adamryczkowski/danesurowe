@@ -119,7 +119,7 @@ df_difference<-function(df1, df2, df1_key=NULL, df2_key=NULL, columns_to_ignore=
     diffs <- ans$diffs[rev(order(diffs_lengths))]
 
     if(length(diffs)>0) {
-      cl<-kmeans(log(diffs %>% purrr::map('items') %>% purrr::map_dbl(length)),length(diffs)^(1/2.5))
+      cl<-kmeans(log( purrr::map_dbl(purrr::map(diffs, 'items'), length) ),length(diffs)^(1/2.5))
       centers<-order(as.numeric(cl$centers))
       lengths<-plyr::mapvalues(cl$cluster, centers, seq_along(centers))
 
@@ -131,20 +131,20 @@ df_difference<-function(df1, df2, df1_key=NULL, df2_key=NULL, columns_to_ignore=
         }
       }
 
-      indexes<-purrr::map2_dbl(diffs %>% purrr::map_lgl('type_1row'), diffs %>% purrr::map_chr('key'), get_key_pos)
+      indexes<-purrr::map2_dbl(purrr::map_lgl(diffs, 'type_1row'), purrr::map_chr(diffs, 'key'), get_key_pos)
 
-      diffs<-diffs[order(-lengths, diffs %>% purrr::map_lgl('type_1row'), indexes ) ]
+      diffs<-diffs[order(-lengths, purrr::map_lgl(diffs, 'type_1row'), indexes ) ]
     }
 
     if(return_format=='md') {
     	if(flag_include_statistics) {
-    		nadf1<-df1[match(diff_db$common_rownames, diff_db$df1keys),] %>%
-    			select_(.dots =  setdiff(diff_db$common_colnames, c(diff_db$df2specific_colnames,diff_db$df1specific_colnames) )) %>%
-    			mutate_all(is.na) %>% data.matrix()
+    		nadf1<-df1[match(diff_db$common_rownames, diff_db$df1keys),]
+    		nadf1<-dplyr::select_(nadf1, .dots =  setdiff(diff_db$common_colnames, c(diff_db$df2specific_colnames,diff_db$df1specific_colnames) ))
+    		nadf1<-data.matrix(dplyr::mutate_all(nadf1, is.na))
 
-    		nadf2<-df2[match(diff_db$common_rownames, diff_db$df2keys),] %>%
-    			select_(.dots =  setdiff(diff_db$common_colnames, c(diff_db$df2specific_colnames,diff_db$df1specific_colnames) )) %>%
-    			mutate_all(is.na) %>% data.matrix()
+    		nadf2<-df2[match(diff_db$common_rownames, diff_db$df2keys),]
+    		nadf2<-dplyr::select_(nadf2, .dots =  setdiff(diff_db$common_colnames, c(diff_db$df2specific_colnames,diff_db$df1specific_colnames) ))
+    		nadf2<-data.matrix(dplyr::mutate_all(nadf2, is.na))
 #				browser()
     		nadf <- sum((1-nadf1) | (1-nadf2))
     		stats <- paste0(
@@ -1098,9 +1098,9 @@ comment_diffs<-function(diff_list,
 			}
 
 #			browser()
-			outvec2 <- tibble(outvec=outvec, key=tmpdb$colname, pos=match(tmpdb$colname, all_colnames))
-			msgtab<-outvec2 %>% group_by(outvec) %>%
-				summarise(n = n(), poss=sort(pos)[[1]], keys=paste0(key, collapse=',')) %>% arrange(-n, poss)
+			outvec2 <- dplyr::tibble(outvec=outvec, key=tmpdb$colname, pos=match(tmpdb$colname, all_colnames))
+			msgtab<-dplyr::summarise(dplyr::group_by(outvec2, outvec), n = n(), poss=sort(pos)[[1]], keys=paste0(key, collapse=','))
+			msgtab<-dplyr::arrange(msgtab, -n, poss)
 
 #			msgtab <- dplyr::arrange(dplyr::as_tibble(table(outvec)), -n)
 			msgvec <- rep('', nrow(msgtab))
@@ -1168,9 +1168,9 @@ comment_diffs<-function(diff_list,
 																df2_data_type = tmpdb$df2_data_type[[i]])
 				outvec[[i]] <- msg
 			}
-			outvec2 <- tibble(outvec=outvec, key=tmpdb$rowname, pos=match(tmpdb$rowname, all_rownames))
-			msgtab<-outvec2 %>% group_by(outvec) %>%
-				summarise(n = n(), poss=sort(pos)[[1]], keys=paste0(key, collapse=',')) %>% arrange(-n, poss)
+			outvec2 <- dplyr::tibble(outvec=outvec, key=tmpdb$rowname, pos=match(tmpdb$rowname, all_rownames))
+			msgtab<-dplyr::summarise(dplyr::group_by(outvec2, outvec) , n = n(), poss=sort(pos)[[1]], keys=paste0(key, collapse=','))
+			msgtab<-dplyr::arrange(msgtab, -n, poss)
 
 			#msgtab <- dplyr::arrange(dplyr::as_tibble(table(outvec)), -n)
 			msgvec <- rep('', nrow(msgtab))
@@ -1568,7 +1568,7 @@ create_df_from_df_structure<-function(df, flag_add_nice_names=FALSE, default_df_
     all_values<-getOption('all_vartypes')
     outdf$vartype <- factor(outdf$vartype, levels=names(all_values), labels = names(all_values))
   } else {
-    outdf <- outdf %>% select(-vartype)
+    outdf <- dplyr::select(outdf, -vartype)
   }
 
   setattr(outdf,'label', paste0('Structure of ', GetDBName(df, default_df_name)))
@@ -1588,7 +1588,7 @@ df_structure_difference<-function(df1, df2, attributes_to_ignore='',
                          flag_include_deleted_rows = flag_comment_deleted_cols,
                          columns_to_ignore = attributes_to_ignore, name_of_cases=name_of_variables)
 
-  ans$diffdb <- ans$diffdb %>% filter(status==0)
+  ans$diffdb <- dplyr::filter(ans$diffdb, status==0)
 
   a<-comment_diffs(ans, flag_comment_replace_NA = TRUE, flag_include_rownumbers = FALSE,
                    name_of_datasets = 'database structures',
