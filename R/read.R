@@ -27,7 +27,76 @@ readDaneSurowe<-function(file) {
   }
 }
 
+readDaneSurowe1 <- function(file) {
+  cat(paste0("Importing ", file, '...\n'))
+
+  ans<-readDataSheet(file)
+  #  if (length(na.colnames)>0)
+  #  {
+  #    na.colnames<-na.colnames-1 #Because we deleted the first column with rownames
+  #  }
+
+  dt<-ans$dt
+
+#  browser()
+  readLabelSheet1(file,dt, ncol(dt))
+  readMeasure1(file,dt)
+#  readVariableGroups(file, df)
+
+  address<-danesurowe::getNamedRange(file, getOption('rng_CustomerFolder'), default_col = 2, default_row = 3, default_sheetname = 'ster')
+  customerfolder<-readSingleCellAtAddress(address)
+
+#  address<-danesurowe::getNamedRange(file, getOption('rng_SubcustomerFolder'), default_col = 2, default_row = 3, default_sheetname = 'ster')
+#  subcustomerfolder<-readSingleCellAtAddress(address)
+
+#  paths<-c(getOption('globalPathPrefix'),customerfolder, subcustomerfolder)
+
+#  setattr(dt,'paths',paths)
+  #  browser()
+#  setattr(dt,'path', file)
+  return(dt)
+}
+
+readDaneSurowe2 <- function(file) {
+  browser()
+  cat(paste0("Importing ", file, '...\n'))
+  ans<-readDataSheet(file)
+  ans$dt[,(1):=NULL] #Remove the first 'lp' column
+  #  if (length(na.colnames)>0)
+  #  {
+  #    na.colnames<-na.colnames-1 #Because we deleted the first column with rownames
+  #  }
+
+  dt<-ans$dt
+
+  readLabelSheet3(file,dt, ncol(dt)*2+2)
+  readMeasureAndUnits(file,dt)
+  readVariableGroups(file, df)
+
+  address<-danesurowe::getNamedRange(file, getOption('rng_DBLongName'))
+  globalname<-readSingleCellAtAddress(address)
+  setattr(dt,'label',globalname)
+
+  address<-danesurowe::getNamedRange(file, getOption('rng_CustomerFolder'))
+  customerfolder<-readSingleCellAtAddress(address)
+
+  address<-danesurowe::getNamedRange(file, getOption('rng_SubcustomerFolder'))
+  subcustomerfolder<-readSingleCellAtAddress(address)
+
+  paths<-c(getOption('globalPathPrefix'),customerfolder, subcustomerfolder)
+
+  setattr(dt,'paths',paths)
+  #  browser()
+  for(i in rev(ans$na.colnames))
+  {
+    dt[,(i):=NULL]
+  }
+  setattr(dt,'path', file)
+  return(dt)
+}
+
 readDaneSurowe3 <- function(file) {
+  cat(paste0("Importing ", file, '...\n'))
   ans<-readDataSheet(file)
   ans$dt[,(1):=NULL] #Remove the first 'lp' column
 #  if (length(na.colnames)>0)
@@ -65,6 +134,7 @@ readDaneSurowe3 <- function(file) {
 
 
 readDaneSurowe4 <- function(file, flag_keep_tagged_na = FALSE, flag_add_warnings=FALSE, flag_keep_empty=TRUE) {
+  cat(paste0("Importing ", file, '...\n'))
   ans<-readDataSheet(file)
   txt<-colnames(ans$dt)
   na.colnames<-c(ans$na.colnames,which(stringi::stri_count(txt, regex='^\\..*$')==1))
@@ -363,9 +433,12 @@ set_apply_labels<-function(dt, labels, vartypes, flagUseTaggedNA=TRUE, in_varnam
 
   fn<-function(varnr)
   {
-    #if (varnr==289) browser();
+    if (varnr==599) {
+      #browser();
+#      debugonce(fn_labelled)
+    }
 
-    #    cat(paste0(varnr,'\n'))
+    #cat(paste0(varnr,'\n'))
 
     info<-fn_baseclass(varnr)
     var<-do.call(fn_labelled, info)

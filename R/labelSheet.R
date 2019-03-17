@@ -1,3 +1,193 @@
+readLabelSheet1<-function(file, dt, colcnt)
+{
+  rngName<-getOption('rng_LabelOrigin')
+  address<-danesurowe::getNamedRange(file, rngName)
+
+  for(i in seq_len(nrow(address))) {
+    if(i == 1) {
+#      browser()
+      readLabelSheet1_one_sheet(file=file, dt=dt, colcnt=127, address=address[1,], varnr_offset=0, flag_rm_first=TRUE)
+    } else if (i==2) {
+      if(2*(colcnt - 255)+2>0) {
+      #  browser()
+        readLabelSheet1_one_sheet(file=file, dt=dt, colcnt=(colcnt - 127), address=address[2,], varnr_offset=127, flag_rm_first=FALSE)
+      }
+    } else {
+      browser()
+    }
+  }
+}
+
+readLabelSheet1_one_sheet<-function(file, dt, colcnt, address, varnr_offset=0, flag_rm_first=FALSE)
+{
+  rng<-readSheet(path=address$file, sheet=address$sheetname, skip=0, colcnt=colcnt+4, flag_remove_cols = FALSE)
+
+#  browser()
+  if(flag_rm_first) {
+    rng[,(1):=NULL] #Drop LP column
+    rng[,(1):=NULL] #Drop 2nd LP column
+  }
+  rng<-rng[3:nrow(rng),]
+
+  rowcnt <- nrow(rng)
+
+  setLabels<-function(varnr, rngcol, dt)
+  {
+    rngLevels<-rng[[rngcol]]
+    if (!all(is.na(rngLevels))){
+      # if (varnr==178)
+      # {
+      #   browser()
+      # }
+    }
+
+    if (!all(is.na(rngLevels)))
+    {
+      #      if (varnr==178)
+      #      {
+      #                browser()
+      #      }
+      maxNA<-match(TRUE, is.na(rngLevels))
+      if (is.na(maxNA))
+      {
+        maxNA<-rowcnt+1
+      }
+      if(varnr==355)
+      {
+        #   browser()
+      }
+      rngLevels<-rngLevels[1:(maxNA-1)]
+      rngLabels<-rng[[rngcol+1]]
+      #      cat(paste(varnr,'\n'))
+
+      if (identical(sort(suppressWarnings(as.integer(rngLevels))),seq_along(rngLevels)))
+      {
+        #Standard factor
+        ord<-order(as.integer(rngLevels))
+        rngLabels<-rngLabels[ord]
+        label<-attr(dt[[varnr]],'label', exact = TRUE)
+        var<-as.integer(dt[[varnr]])
+        setattr(var,'levels',rngLabels)
+        setattr(var,'class','factor')
+        setattr(var,'label',label)
+        dt[,(varnr):=var]
+      } else {
+        #Labelled variable
+        numLevels<-suppressWarnings(as.numeric(rngLevels))
+        if (sum(is.na(numLevels))==0)
+        {
+          rngLevels<-numLevels
+          if (min(abs(c(rngLevels%%1, rngLevels%%1-1))) < 0.0000000000005)
+          {
+            rngLevels<-as.integer(rngLevels)
+            label<-attr(dt[[varnr]],'label', exact = TRUE)
+            dt[, varnr:=as.integer(dt[[varnr]]), with=FALSE]
+            setattr(dt[[varnr]],'label',label)
+          }
+          names(rngLevels)<-rngLabels
+          setattr(dt[[varnr]], 'class', 'labelled')
+          setattr(dt[[varnr]], 'labels', rngLevels)
+        }
+      }
+    }
+  }
+  for (i in seq_len(colcnt))
+  {
+    #cat(paste('i=',i,'\n'))
+    # if(i==80)
+    # {
+    #   browser()
+    # }
+    setLabels(i+varnr_offset, rngcol = (i)*2-1, dt)
+  }
+}
+
+
+readLabelSheet2<-function(file, dt, colcnt)
+{
+  rngName<-getOption('rng_LabelOrigin')
+  address<-danesurowe::getNamedRange(file, rngName)
+
+  rng<-readSheet(path=address$file, sheet=address$sheetname, skip=0, colcnt=colcnt+4)
+
+  rng[,(1):=NULL] #Drop first column
+  rng[,(1):=NULL] #Drop column
+  rng[,(1):=NULL] #for Lp.
+  rng<-rng[3:nrow(rng),]
+
+  rowcnt <- nrow(rng)
+
+  setLabels<-function(varnr, dt)
+  {
+    rngLevels<-rng[[(varnr)*2+1]]
+    if (!all(is.na(rngLevels))){
+      # if (varnr==178)
+      # {
+      #   browser()
+      # }
+    }
+
+    if (!all(is.na(rngLevels)))
+    {
+      #      if (varnr==178)
+      #      {
+      #                browser()
+      #      }
+      maxNA<-match(TRUE, is.na(rngLevels))
+      if (is.na(maxNA))
+      {
+        maxNA<-rowcnt+1
+      }
+      if(varnr==355)
+      {
+        #   browser()
+      }
+      rngLevels<-rngLevels[1:(maxNA-1)]
+      rngLabels<-rng[[(varnr)*2+2]]
+      #      cat(paste(varnr,'\n'))
+
+      if (identical(sort(suppressWarnings(as.integer(rngLevels))),seq_along(rngLevels)))
+      {
+        #Standard factor
+        ord<-order(as.integer(rngLevels))
+        rngLabels<-rngLabels[ord]
+        label<-attr(dt[[varnr]],'label', exact = TRUE)
+        var<-as.integer(dt[[varnr]])
+        setattr(var,'levels',rngLabels)
+        setattr(var,'class','factor')
+        setattr(var,'label',label)
+        dt[,(varnr):=var]
+      } else {
+        #Labelled variable
+        numLevels<-suppressWarnings(as.numeric(rngLevels))
+        if (sum(is.na(numLevels))==0)
+        {
+          rngLevels<-numLevels
+          if (min(abs(c(rngLevels%%1, rngLevels%%1-1))) < 0.0000000000005)
+          {
+            rngLevels<-as.integer(rngLevels)
+            label<-attr(dt[[varnr]],'label', exact = TRUE)
+            dt[, varnr:=as.integer(dt[[varnr]]), with=FALSE]
+            setattr(dt[[varnr]],'label',label)
+          }
+          names(rngLevels)<-rngLabels
+          setattr(dt[[varnr]], 'class', 'labelled')
+          setattr(dt[[varnr]], 'labels', rngLevels)
+        }
+      }
+    }
+  }
+  for (i in 1:(ncol(dt)))
+  {
+    #cat(paste('i=',i,'\n'))
+    # if(i==80)
+    # {
+    #   browser()
+    # }
+    setLabels(i, dt)
+  }
+}
+
 readLabelSheet3<-function(file, dt, colcnt)
 {
   rngName<-getOption('rng_LabelOrigin')
@@ -74,11 +264,11 @@ readLabelSheet3<-function(file, dt, colcnt)
   }
   for (i in 1:(ncol(dt)))
   {
-    #cat(paste('i=',i,'\n'))
-    # if(i==80)
-    # {
-    #   browser()
-    # }
+ #   cat(paste('i=',i,'\n'))
+    if(i==542)
+    {
+#      browser()
+    }
     setLabels(i, dt)
   }
 }

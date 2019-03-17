@@ -98,55 +98,58 @@ GetFOB<-function(var, flag_recalculate_uniques=FALSE, flag_update_dt=FALSE) {
   if(is.null(var)) {
     browser()
   }
+  if('data.frame' %in% class(var)) {
+    return(purrr::map_int(var, GetFOB, flag_recalculate_uniques=TRUE, flag_update_dt=TRUE))
+  }
   if(flag_recalculate_uniques) {
     count<-length(unique(var))
     if(count==2) {
       if(flag_update_dt)
-        data.table::setattr(var, 'f.o.b', 3)
-      return(3)
+        data.table::setattr(var, 'f.o.b', 3L)
+      return(3L)
     } else if (count<=1) {
       if(flag_update_dt)
-        data.table::setattr(var, 'f.o.b', -1)
-      return(-1)
+        data.table::setattr(var, 'f.o.b', -1L)
+      return(-1L)
     }
   } else {
     count<-NA
   }
-  fob<-attr(var, 'f.o.b', exact = TRUE)
+  fob<-as.integer(attr(var, 'f.o.b', exact = TRUE))
   if(is.null(attr(var, 'f.o.b', exact = TRUE))) {
     typ <- class2vartype(var)
     if(typ %in% c('F', 'L')) {
       labs <- GetLabels(var)
       if(min(length(labs),count, na.rm=TRUE)==2) {
-        fob<-3
+        fob<-3L
 #        data.table::setattr(var, 'f.o.b', 3)
       } else {
         if (IsLimitedToLabels_1(var)) {
           if('ordered' %in% class(var)) {
-            fob<-2
+            fob<-2L
 #            data.table::setattr(var, 'f.o.b', 2)
           } else {
-            fob<-1
+            fob<-1L
 #            data.table::setattr(var, 'f.o.b', 1)
           }
         } else {
-          fob<-2
+          fob<-2L
 #          data.table::setattr(var, 'f.o.b', 2)
         }
       }
     } else if (typ %in% c('I', 'N', 'D') ) {
-      fob<-0
+      fob<-0L
 #      data.table::setattr(var, 'f.o.b', 0)
     } else if (typ == '0') {
-      fob<-3
+      fob<-3L
 #      data.table::setattr(var, 'f.o.b', 3)
     } else if (typ == 'S') {
       u <- unique(var)
       if (length(u)>2) {
-        fob<-1
+        fob<-1L
 #        data.table::setattr(var, 'f.o.b', 1)
       } else {
-        fob<-3
+        fob<-3L
 #        data.table::setattr(var, 'f.o.b', 3)
       }
     } else {
@@ -156,7 +159,7 @@ GetFOB<-function(var, flag_recalculate_uniques=FALSE, flag_update_dt=FALSE) {
   if(flag_update_dt){
     data.table::setattr(var, 'f.o.b', fob)
   }
-  return(fob)
+  return(as.integer(fob))
 }
 
 IsLimitedToLabels_1<-function(var) {

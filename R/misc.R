@@ -100,179 +100,6 @@ setattr(df$height, 'label', 'Wzrost')
 
 format_var_name<-Vectorize(format_var_name_1, vectorize.args = c('colname', 'longcolname' ,'units'))
 
-# wykorzystywane atrybuty kolumn df:
-# * label - nazwa danego atrybutu
-# * decoration - znak, którym należy dekorować daną kolumną przed i po
-# * decoration_prefix
-# * decoration_suffix - zamiast decoration.
-# * factor_sprintf_format - format zostanie użyty, jeśli zmienna jest typu factor. domyślnie: "%2$s (%1$s)"
-# * verbatim - jeśli ustawiona to wartość nie zostanie w żaden sposób formatowana
-# * infix_equal - jaki znak użyć przy cytowaniu wartości danego atrybutu?
-#   Np. " = " albo ": ", co da "[coś] = 23" albo "[coś]: 23"
-#
-# colname_with_includes - musi wskazywać na kolumnę o nazwie istniejącej w df
-# percent_for_inversion - gdy liczba elementów do pokazania przekroczy threshold_for_table i będzie
-#                         większa od percent_for_inversion% wszystkich rekordów, i została wskazana
-#                         colname_with_includes, to zostanie reportowane
-#                         dopełnienie zbioru rekordów.
-# flag_use_ellpisis - gdy do przedstawienia będzie więcej, niż threshold_for_table elementów,
-#                     to zostanie użyty długi format w formie niedokończonej listy (z ...).
-#                     W przeciwnym razie, zostanie wklejona tabela.
-# txt_attribute_separator - przydatne, gdy generujemy słowa a nie tabelkę.
-# threshold_for_table     - Jeśli liczba elementów przekroczy ten próg, to spróbujemy zrobić tabelę (lub notację
-#                           odwróconą, jeśli podany zbiór df zawiera wszystkie potencjalne rekordy, a nie
-#                           tylko te, które chcemy wypisać, z kolumną filtrującą wskazaną przez argument includes)
-#
-#Przykład:
-#> df<-tibble(bla=as.character(1:5))
-#> danesurowe::format_item_list(df = df)
-# [1] "1, 2, 3, 4 oraz 5"
-
-format_item_list_en<-function(df, colname_with_includes=NULL, includes=NULL,  flag_use_ellipsis = FALSE,
-                              threshold_for_table=10, percent_for_inversion=0.8,
-                              table_caption=NULL, table_prefix='\n\n', text_prefix='',
-                              txt_attribute_separator=', ', txt_attribute_separator_last=' and ',
-                              txt_attribute_prefix=' (', txt_attribute_suffix=')',
-                              txt_separator=', ', txt_separator_last = ' and ',
-                              txt_attribute_infix = ':\uA0', txt_attribute_bare_quote = '`',
-                              txt_attribute_label_quote = '',
-                              prefix_all_except = 'all except:: ') {
-  format_item_list(df=df, colname_with_includes=colname_with_includes, includes=includes,
-                   flag_use_ellipsis = flag_use_ellipsis, threshold_for_table=threshold_for_table,
-                   percent_for_inversion=percent_for_inversion, table_caption=table_caption,
-                   table_prefix=table_prefix, text_prefix=text_prefix,
-                   txt_attribute_separator=txt_attribute_separator,
-                   txt_attribute_separator_last=txt_attribute_separator_last,
-                   txt_attribute_prefix=txt_attribute_prefix, txt_attribute_suffix=txt_attribute_suffix,
-                   txt_separator=txt_separator, txt_separator_last = txt_separator_last,
-                   txt_attribute_infix = txt_attribute_infix, txt_attribute_bare_quote = txt_attribute_bare_quote,
-                   txt_attribute_label_quote = txt_attribute_label_quote,
-                   prefix_all_except = prefix_all_except)
-}
-
-format_item_list<-function(df, colname_with_includes=NULL, includes=NULL,  flag_use_ellipsis = FALSE,
-                           threshold_for_table=10, percent_for_inversion=0.8,
-                           table_caption=NULL, table_prefix='\n\n', text_prefix='',
-                           txt_attribute_separator=', ', txt_attribute_separator_last=' i ',
-                           txt_attribute_prefix=' (', txt_attribute_suffix=')',
-                           txt_separator=', ', txt_separator_last = ' oraz ',
-                           txt_attribute_infix = ':\uA0', txt_attribute_bare_quote = '`',
-                           txt_attribute_label_quote = '',
-                           prefix_all_except = 'wszystkie poza: '
-) {
-  if(is.atomic(df)) {
-    df<-tibble::tibble(val=df)
-  }
-  if (!is.null(colname_with_includes)) {
-    if(length(colname_with_includes)!=1)
-      stop("colname_with_includes argument must have length 1")
-    if(! colname_with_includes %in% colnames(df)){
-      stop(paste0("Cannot find colname_with_includes=",colname_with_includes,' among colnames in df'))
-    }
-    if(!is.null(includes)) {
-      stop(paste0("You cannot put both includes and colname_with_includes"))
-    }
-    includes <- df[[colname_with_includes]]
-    if('data.table' %in% class(df)){
-      df <- copy(df)
-    }
-    df[[colname_with_includes]] <- NULL
-    flag_can_use_inverse <- TRUE
-  } else {
-    if(is.null(includes))  {
-      includes <- rep(TRUE, nrow(df))
-      flag_can_use_inverse <- FALSE
-    } else {
-      if(length(includes)!=nrow(df)) {
-        stop("Vector includes must have the same lenght as number of rows of the dataframe to display")
-      }
-      flag_can_use_inverse <- TRUE
-    }
-  }
-
-  #Najpierw wyłapmy konieczność raportowania odwrotności
-
-  if(sum(includes)>threshold_for_table) {
-    if(flag_can_use_inverse) {
-      if(sum(includes)/nrow(df) > percent_for_inversion) {
-        dfinv<-df[!includes,]
-        copy_dt_attributes(dt_source = df, dfinv)
-        ans<-paste0(prefix_all_except,
-                    format_item_list(dfinv, flag_use_ellipsis=flag_use_ellipsis,
-                                     txt_attribute_separator=txt_attribute_separator,
-                                     txt_attribute_separator_last=txt_attribute_separator_last,
-                                     txt_attribute_prefix=txt_attribute_prefix,
-                                     txt_attribute_suffix=txt_attribute_suffix,
-                                     txt_separator=txt_separator, txt_separator_last = txt_separator_last,
-                                     txt_attribute_infix = txt_attribute_infix,
-                                     txt_attribute_bare_quote = txt_attribute_bare_quote,
-                                     txt_attribute_label_quote = txt_attribute_label_quote,
-                                     table_prefix=table_prefix, table_caption=table_caption,
-                                     threshold_for_table=threshold_for_table))
-        return(ans)
-      }
-    }
-  }
-  #Teraz wyłapmy konieczność stworzenia tabelki
-  tabdf<-df[includes,]
-  tabdf<-copy_dt_attributes(df, tabdf)
-  for(cn in seq_along(colnames(tabdf))) {
-    tabdf[[cn]]<-report_values(tabdf[[cn]])
-  }
-  tabdf<-tibble::as_tibble(tabdf)
-  #  tabdf <- tibble::as_tibble(dplyr::mutate_all(tabdf, report_values)) #Formatujemy tabelę
-
-  if(sum(includes)>threshold_for_table) {
-    if(!flag_use_ellipsis) {
-      tabdf <- as.matrix.data.frame(tabdf)
-      colnames(tabdf)<-format_colnames(df, quote_bare_name = txt_attribute_bare_quote,
-                                       quote_label = txt_attribute_label_quote)
-      if(is.null(table_prefix)) {
-        table_prefix<-''
-      }
-      return(paste0('\n', table_prefix, pander::pandoc.table.return(tabdf, caption = table_caption)))
-    }
-  }
-  #Teraz na pewno pozostała nam lista tekstowa i chcemy ją sformatować jako zwykły tekst
-
-  if(ncol(df)>1) {
-    #To znaczy, że mamy format z atrybutami
-    fmt_fn <- function(i, df) {
-      if(i==1) {
-        ans_vec<-format_attr_list(df = df[, 2:ncol(df)], nrow=i, quote_bare_name = txt_attribute_bare_quote,
-                                  quote_label = txt_attribute_label_quote, infix = txt_attribute_infix)
-      } else {
-        ans_vec<-purrr::map_chr(df[i,2:ncol(df)], as.character)
-      }
-      if(ncol(df)>2) {
-        ans<-paste0(df[[1]][[i]], txt_attribute_prefix,
-                    paste0(ans_vec[1:(length(ans_vec)-1)], collapse = txt_attribute_separator),
-                    txt_attribute_separator_last, ans_vec[[length(ans_vec)]], txt_attribute_suffix)
-      } else  {
-        ans<-paste0(df[[1]][[i]], txt_attribute_prefix,
-                    ans_vec,
-                    txt_attribute_suffix)
-      }
-      return(ans)
-    }
-    values <- purrr::map_chr(seq(nrow(df)), fmt_fn, df=tabdf)
-  } else {
-    values <- df[[1]]
-  }
-  data.table::setattr(values, 'verbatim', 1)
-
-  if(sum(includes)>threshold_for_table) {
-    values<-c(values[1:7], '...', values[length(values)-3, length(values)])
-  }
-
-  if(length(values)>1) {
-    ret<-paste0(paste0(as.character(values[c(-length(values))]), collapse = txt_separator),
-                txt_separator_last, values[[length(values)]])
-  } else {
-    ret<-values
-  }
-  return(paste0(text_prefix, ret))
-}
 
 #Zwraca wektor character z ładnymi nazwami i wartościami atrybutów, np.
 #   Imię: Adam (wiek: 13)
@@ -314,6 +141,7 @@ format_var_list<-function(colnames, longcolnames=NULL, dt=NULL,
                           flag_main_is_short_name=FALSE, flag_include_secondary_name=FALSE,
                           flag_quote_shortname='', flag_quote_longname='', name_of_variables='variables', units="")
 {
+  checkmate::assert_character(colnames)
   if(is.null(dt)) {
     complementary_colnames <- NULL
   } else {
@@ -326,6 +154,7 @@ format_var_list<-function(colnames, longcolnames=NULL, dt=NULL,
       flag_include_secondary_name<-FALSE
     } else {
       longcolnames<-Hmisc::label(data.frame(dt)[colnames])
+      longcolnames[longcolnames==colnames]<-''
     }
   } else {
     if(length(colnames) != length(longcolnames)) {
@@ -431,118 +260,6 @@ format_values_as_one_string<-function(values, complementary_values=NULL, plural_
                 ", ...",
                 paste0(tail(formatted_values,3), collapse=", ")
   ))
-}
-
-format_values<-function(values)
-{
-  if(!is.null(attr(values,'verbatim', exact = TRUE))) {
-    return(values)
-  } else {
-    UseMethod("format_values", values)
-  }
-}
-
-
-
-get_decorations<-function(values, default='') {
-  ans<-rep(default, length.out=2)
-  if(!is.null(attr(values,'decoration', exact = TRUE))) {
-    ans<-rep(attr(values,'decoration', exact = TRUE),2)
-  }
-  if(!is.null(attr(values, 'decoration_prefix', exact = TRUE))) {
-    ans[[1]]<-attr(values,'decoration_prefix', exact = TRUE)
-  }
-  if(!is.null(attr(values, 'decoration_suffix', exact = TRUE))) {
-    ans[[2]]<-attr(values,'decoration_suffix', exact = TRUE)
-  }
-  return(ans)
-}
-
-format_values.character<-function(values)
-{
-  decors<-get_decorations(values,'`')
-  return(paste0(decors[[1]], values, decors[[2]]))
-}
-
-format_values.integer<-function(values)
-{
-  decors<-get_decorations(values,'')
-  return(paste0(decors[[1]], as.character(values), decors[[2]]))
-}
-
-format_values.numeric<-function(values)
-{
-  decors<-get_decorations(values,'')
-  return(paste0(decors[[1]], trimws(as.character(haven::format_tagged_na(values))), decors[[2]]))
-}
-
-format_values.Date<-function(values)
-{
-  decors<-get_decorations(values,'')
-  old_locale <- Sys.getlocale(category="LC_TIME")
-  Sys.setlocale(category="LC_TIME", locale ="en_US.UTF-8")
-  ans<-paste0(decors[[1]], as.character( values, format='%e %b %Y'), decors[[2]])
-  Sys.setlocale(category="LC_TIME", locale = old_locale)
-  return(ans)
-}
-
-format_values.factor<-function(values)
-{
-  #  browser()
-  fmt<-attr(values, 'factor_sprintf_format', exact = TRUE)
-  if(is.null(fmt)) {
-    fmt<-"%2$s (%1$s)"
-  }
-  labels<-as.character(values)
-  values<-format_values.integer(as.integer(values))
-  return(sprintf(fmt, values, labels))
-}
-
-format_values.labelled<-function(values)
-{
-  #  browser()
-  out <- as.character(values)
-
-  if(sum(haven::is_tagged_na(values))>0)
-  {
-    taged_nas<-haven::is_tagged_na(values)
-    tags<-haven::na_tag(values)
-    NAvalues<-haven::na_tag(labelled::val_labels(values))
-    NAlabels<-names(labelled::val_labels(values))[!is.na(NAvalues)]
-    NAvalues<-na.omit(NAvalues)
-    for(i in seq_along(NAvalues))
-    {
-      NAvalue <- NAvalues[[i]]
-      out[tags==NAvalue]<-paste0("<", NAlabels[[i]], ">")
-    }
-  } else {
-    taged_nas<-rep(FALSE, length(values))
-  }
-  if(sum(is.na(out))>0)
-  {
-    out[is.na(out)]<-'NA'
-  }
-
-  if(sum(!is.na(values))>0)
-  {
-    not_nas<-!is.na(values)
-    vals<-values[not_nas]
-    Lvalues<-labelled::val_labels(values)
-    Llabels<-names(labelled::val_labels(values))[!is.na(Lvalues)]
-    Lvalues<-na.omit(Lvalues)
-    fmt<-attr(values, 'factor_sprintf_format', exact = TRUE)
-    if(is.null(fmt)) {
-      fmt<-"%2$s (%1$s)"
-    }
-    for(i in seq_along(Llabels))
-    {
-      Llabel<-Llabels[[i]]
-      Lvalue<-Lvalues[[i]]
-
-      out[values==Lvalue]<-sprintf(fmt, Lvalue, Llabel)
-    }
-  }
-  return(out)
 }
 
 format_case_value_list<-function(case_names, values, flag_quote=FALSE)
@@ -722,8 +439,16 @@ VariableHasLabels<-function(var) {
   if(is.factor(var)) {
     return(TRUE)
   }
-  return(!is.null(labelled::val_labels(var)))
+  if(!is.null(labelled::val_labels(var))) {
+    return(TRUE)
+  }
+  if('numeric' %in% class(var)) {
+    return(!is.null(attr(var, 'labels')))
+  }
+  return(FALSE)
 }
+
+allvartypes<-c('F','I', 'N', 'D', 'T', 'S', '0', 'B', 'L')
 
 #Returns a letter that encodes data type.
 class2vartype<-function(var)
@@ -758,7 +483,11 @@ class2vartype_str<-function(classes, all_is_na, has_labels=NA)
     return('I')
   } else if(classes_sorted == 'numeric')
   {
-    return('N')
+    if(is.na(has_labels) || !has_labels) {
+      return('N')
+    } else {
+      return('L')
+    }
   } else if(classes_sorted %in% c('Date'))
   {
     return('D')

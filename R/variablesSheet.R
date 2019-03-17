@@ -1,3 +1,22 @@
+readMeasure1<-function(file, dt)
+{
+#  browser()
+  address<-danesurowe::getNamedRange(file, getOption('rng_Measure'), default_sheetname = 'zmienne', default_col = 3, default_row = 3, rowcount = nrow(dt))
+  rng<-readxl::read_excel(path=address$file, sheet=address$sheetname, col_names = FALSE)
+  measures<-rng[[address$colnr-1]][(address$rownr):(address$rownr+ncol(dt)-1)]
+
+
+  for (varnr in seq_along(measures))
+  {
+    setattr(dt[[varnr]],'f.o.b',switch(measures[[varnr]],N=1,O=2,D=3,0))
+    if (measures[[varnr]]=='O' && is.factor(dt[[varnr]]))
+    {
+      setattr(dt[[varnr]], 'class', c(attr(dt[[varnr]],'class', exact = TRUE), 'ordered'))
+    }
+  }
+
+}
+
 readMeasureAndUnits<-function(file, dt)
 {
 

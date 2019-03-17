@@ -1,5 +1,5 @@
 #' Returns c(<sheet_name>,<row>,<column>) from the namedRange
-getNamedRange <- function(file, namedRange, rowcount=1, colcount=1)
+getNamedRange <- function(file, namedRange, rowcount=1, colcount=1, default_col=NULL, default_row=NULL, default_sheetname=NULL)
 {
   if (!file.exists(file))
   {
@@ -32,9 +32,28 @@ getNamedRange <- function(file, namedRange, rowcount=1, colcount=1)
       } else if (namedRange=='SubcustomerFolder') {
         xlsrange<-"ster!B5"
         sheetname<-'ster'
+      } else if (namedRange=='LabelOrigin') {
+        if('etykiety' %in% sheets) {
+          xlsrange<-"etykiety!A3"
+          sheetname<-'etykiety'
+        } else if('etykiety1' %in% sheets) {
+          xlsrange<-c("etykiety1!A3","etykiety2!A3")
+          sheetname<-c('etykiety1', 'etykiety2')
+        }
+      } else if (namedRange=='DataOrigin') {
+        if('dane' %in% sheets) {
+          xlsrange<-"dane!A1"
+          sheetname<-'dane'
+        } else {
+          browser()
+        }
       } else {
-        browser()
-        stop(paste0("Wrong format of the ", file, ". Cannot find the ", wewsheetname , " sheet or named range ", namedRange, '.'))
+        if(is.null(default_col)) {
+          browser()
+          stop(paste0("Wrong format of the ", file, ". Cannot find the ", wewsheetname , " sheet or named range ", namedRange, '.'))
+        } else {
+          xlsrange<-'auto'
+        }
       }
 
     } else {
@@ -44,20 +63,23 @@ getNamedRange <- function(file, namedRange, rowcount=1, colcount=1)
       sheetname<-nr$getSheetName()
       xlsrange<-nr$getRefersToFormula()
     }
-    ans<-stringr::str_match(xlsrange, stringr::regex(paste0("^",sheetname,
-                                                            "!\\$?([A-Za-z]{0,2})\\$?([0-9]{0,5}):?\\$?([A-Za-z]{0,2})\\$?([0-9]{0,5})$")))
-    if(ans[[4]]=="") {
-      rng1<-cellranger::as.cell_addr(paste0("$", ans[[2]], "$", ans[[3]]))
-      rng2<-rng1
-    } else {
-      rng1<-cellranger::as.cell_addr(paste0("$", ans[[2]], "$", ans[[3]]))
-      rng2<-cellranger::as.cell_addr(paste0("$", ans[[4]], "$", ans[[5]]))
-    }
-    colnr<-rng1$col
-    rownr<-rng1$row
-    rowcount<-rng2$row - rng1$row + 1
-    colcount<-rng2$col - rng1$col + 1
+    if(all(xlsrange!='auto')) {
+      ans<-stringr::str_match(xlsrange, stringr::regex(paste0("^",sheetname,
+                                                              "!\\$?([A-Za-z]{0,2})\\$?([0-9]{0,5}):?\\$?([A-Za-z]{0,2})\\$?([0-9]{0,5})$")))
 
+      ans[,4]<-ifelse(ans[,4]=="", ans[,2],ans[,4])
+      ans[,5]<-ifelse(ans[,5]=="", ans[,3],ans[,5])
+      rng1<-cellranger::as.cell_addr(paste0("$", ans[,2], "$", ans[,3]))
+      rng2<-cellranger::as.cell_addr(paste0("$", ans[,4], "$", ans[,5]))
+      colnr<-rng1$col
+      rownr<-rng1$row
+      rowcount<-rng2$row - rng1$row + 1
+      colcount<-rng2$col - rng1$col + 1
+    } else {
+      colnr<-default_col
+      rownr<-default_row
+      sheetname<-default_sheetname
+    }
   } else {
     rng<-readxl::read_excel(path=file, sheet=wewsheetname, skip=wewsheetrow-2)
     if (!namedRange %in% rng[[1]])
@@ -70,7 +92,8 @@ getNamedRange <- function(file, namedRange, rowcount=1, colcount=1)
     rownr<-rng[[6]][[rownr]]
 
   }
-  return(list(file=file, sheetname=sheetname, rownr=rownr, colnr=colnr, rowcount=rowcount, colcount=colcount))
+
+  return(data.table(file=file, sheetname=sheetname, rownr=rownr, colnr=colnr, rowcount=rowcount, colcount=colcount))
 }
 
 readSingleCellAtAddress<-function(address)
@@ -100,7 +123,7 @@ readRowAtAddress<-function(address)
   return(rng)
 }
 
-readSheet<-function(path, sheet, skip = 0, colcnt=NA)
+readSheet<-function(path, sheet, skip = 0, colcnt=NA, flag_remove_cols=TRUE)
 {
   if (is.na(colcnt))
   {
@@ -110,20 +133,23 @@ readSheet<-function(path, sheet, skip = 0, colcnt=NA)
 
   rng<-data.table::as.data.table(suppressWarnings(readxl::read_excel(path=path, sheet=sheet, col_names = FALSE, skip = skip)))
 
-  new.colids<-paste0('X__',seq(0,colcnt-1))
-  new.colids.idx<-new.colids[! (new.colids %in% colnames(rng))]
-  delete.colids.idx<-colnames(rng)[!(colnames(rng) %in% new.colids )]
+  if(flag_remove_cols) {
 
-  for (i in delete.colids.idx)
-  {
-    rng[,(i):=NULL]
-  }
-  for (i in new.colids.idx)
-  {
-    rng[,(i):=NA]
-  }
+    new.colids<-paste0('X__',seq(0,colcnt-1))
+    new.colids.idx<-new.colids[! (new.colids %in% colnames(rng))]
+    delete.colids.idx<-colnames(rng)[!(colnames(rng) %in% new.colids )]
 
-  setcolorder(rng, new.colids)
+    for (i in delete.colids.idx)
+    {
+      rng[,(i):=NULL]
+    }
+    for (i in new.colids.idx)
+    {
+      rng[,(i):=NA]
+    }
+
+    setcolorder(rng, new.colids)
+  }
   return(rng)
 }
 

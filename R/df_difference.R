@@ -357,17 +357,21 @@ gen_difference_df<-function(df1, df2, df1_key=NULL, df2_key=NULL, columns_to_ign
   if(flag_include_deleted_cols) {
   	#Adding new cols to df2
   	for(colname in df1specific_colnames) {
-  		df2[,(colname):=df1[[colname]][[1]]]
-  		df2[1:nrow(df2),(colname):=NA]
+  	  df2<-as.data.table(as.data.frame(df2))
+  	  data.table::set(df2, NULL, colname, df1[[colname]][[1]])
+  	  data.table::set(df2, seq_len(nrow(df2)), colname, NA)
   		copy_obj_attributes(df1[[colname]], df2[[colname]])
   	}
   }
 
   if(flag_include_new_cols) {
   	for(colname in df2specific_colnames) {
-  		df1[,(colname):=df2[[colname]][[1]]]
-  		df1[1:nrow(df1),(colname):=NA]
-  		copy_obj_attributes(df2[[colname]], df1[[colname]])
+  	# 	df1[,(colname):=df2[[colname]][[1]]]
+  	#   df1[1:nrow(df1),(colname):=NA]
+  	  df1<-as.data.table(as.data.frame(df1))
+  	  data.table::set(df1, NULL, colname, df2[[colname]][[1]])
+  	  data.table::set(df1, seq_len(nrow(df1)), colname, NA)
+  	  copy_obj_attributes(df2[[colname]], df1[[colname]])
   	}
   }
   df1_names<-colnames(df1)
@@ -679,7 +683,7 @@ convert_to_string<-function(var, row, missing_string='NA', string_quote_characte
       									GetLabels(var)[match(val, GetLevels(var))],
       									other_text_quote_character)
     }
-  } else if (vartype %in% c('I', 'D', 'S', 'F', '0', 'B'))  {
+  } else if (vartype %in% c('I', 'D', 'T', 'S', 'F', '0', 'B'))  {
   	if(is.na(val)) {
   		val_out <- missing_string
   	} else if (vartype == 'S') {
@@ -786,7 +790,7 @@ convert_str_to_var<-function(strval, destvar)
         }
       }
     }
-  } else if (destvartype == 'D') {
+  } else if (destvartype %in% c('D','T')) {
     value <- try(as.Date(strval), silent = TRUE)
     if (class(value) == 'try-error') {
       status <- convert_str_to_var.statuses$NOT_A_DATE
@@ -815,8 +819,12 @@ convert_num_to_var<-function(numval, destvar)
 {
   destvartype <- class2vartype(destvar)
   if (destvartype %in% c('F', 'L'))  {
-    levels<-GetLevels(destvar)
+    levels<-GetLevels(destvar, flag_recalculate = FALSE)
+    if(length(levels)==0) {
+      browser()
+    }
     pos<-which.max(Vectorize(all.equal)(levels, numval)==TRUE)
+
 #    pos<-match(strval, labels)
     if (is.na(pos)) {
       status <- convert_var_to_var.status$LEVEL_NOT_EXISTING
@@ -844,7 +852,7 @@ convert_num_to_var<-function(numval, destvar)
       value <- NA
       status <- convert_var_to_var.status$NOT_WHOLE_NUMBER
     }
-  } else if (destvartype=='D') {
+  } else if (destvartype%in%c('D','T')) {
     ans<-try(as.Date(numval, origin = "1899-12-30"), silent = TRUE)
     if (class(ans)=='try-error')  {
       value<-NULL
@@ -1338,25 +1346,25 @@ comment_one_diff<-function(rownr, diffdb, df1, df1keys, df2, df2keys, df2_data_t
   { # LEVEL_NOT_EXISTING
     msg <- paste0(ifelse(var2_type=='F', 'factor', 'labelled'),
                   " ", name_of_variable, " #A_#",
-                  "doesn't have defined level ", format_values(df1_value), "#_2#")
+                  "doesn't have defined level ", itemNaming::format_values(df1_value), "#_2#")
   } else if (status==2) { # STRING_IS_NOT_A_NUMBER
-    msg <- paste0("cannot convert value ", format_values(df1_value), " to number#_B##_2#")
+    msg <- paste0("cannot convert value ", itemNaming::format_values(df1_value), " to number#_B##_2#")
   } else if (status==3) { # NOT_WHOLE_NUMBER
-    msg <- paste0("cannot convert value ", format_values(df1_value), " to integer#_B##_2#")
+    msg <- paste0("cannot convert value ", itemNaming::format_values(df1_value), " to integer#_B##_2#")
   } else if (status==4) { # NOT_A_DATE
-    msg <- paste0("cannot convert value ", format_values(df1_value), " to proper date#_B##_2#")
+    msg <- paste0("cannot convert value ", itemNaming::format_values(df1_value), " to proper date#_B##_2#")
   } else if (status==5) { # LOST_TAGGED_NA
-    msg <- paste0("#A_#doesn't allow for tagged NA ", format_values(df2_value), '#_2#')
+    msg <- paste0("#A_#doesn't allow for tagged NA ", itemNaming::format_values(df2_value), '#_2#')
   } else if (status==6) { # TAGGED_NA_ON_NUMERIC
-    msg <- paste0("tagged NA ", format_values(df2_value), " inserted into numeric ", name_of_variable, "#_A##_2#")
+    msg <- paste0("tagged NA ", itemNaming::format_values(df2_value), " inserted into numeric ", name_of_variable, "#_A##_2#")
   } else if (status==0) { #OK
 #    browser()
     if(is.na(df1[[colname]][[match(rowname, df1keys)]]) ) {
-  		msg <- paste0(format_values(df2_value), " added#_B##_2#")
+  		msg <- paste0(itemNaming::format_values(df2_value), " added#_B##_2#")
     } else if(is.na(df2[[colname]][[match(rowname, df2keys)]]) ) {
-      msg <- paste0(format_values(df1_value), " removed#_B##_2#")
+      msg <- paste0(itemNaming::format_values(df1_value), " removed#_B##_2#")
     } else {
-      msg <- paste0(format_values(df2_value), " replaces value ", format_values(df1_value), '#_B##_2#')
+      msg <- paste0(itemNaming::format_values(df2_value), " replaces value ", itemNaming::format_values(df1_value), '#_B##_2#')
     }
   }
   return(msg)
@@ -1388,8 +1396,16 @@ update_diffdt_row<-function(diffrow, df1, df2, diffdb)
                         'NULL'
     )
     if(is.null(value_var)) browser()
-    if (var2_type != 'D' || is.na(ans$value)) {
-    	set(diffdb, i=diffrow, j=value_var, value=ans$value)
+    if (!var2_type %in% c('D','T')  || is.na(ans$value)) {
+      if(var2_type=='0') {
+        suppressWarnings(set(diffdb, i=diffrow, j=value_var, value=ans$value))
+      } else {
+        flag<-FALSE
+        tryCatch(set(diffdb, i=diffrow, j=value_var, value=ans$value),
+                 warning=function(w){flag<<-TRUE})
+        if(flag){browser()}
+        set(diffdb, i=diffrow, j=value_var, value=ans$value)
+      }
     } else {
       if (! 'Date' %in% class(ans$value) ) {
       	if('POSIXct' %in% class(ans$value)) {
@@ -1476,7 +1492,7 @@ create_diffdb<-function(diff_matrix, diff_rownames, diff_colnames,
   return(row_db)
 }
 
-create_df_from_df_structure<-function(df, flag_add_nice_names=FALSE, default_df_name=NULL, flag_include_vartype=FALSE) {
+create_df_from_df_structure<-function(df, flag_add_nice_names=FALSE, default_df_name=NULL, flag_include_vartype=FALSE, flag_include_fob=FALSE) {
   outdf<-dplyr::tibble(colname=colnames(df), label=Hmisc::label(df),
                        class=purrr::map_chr(as.list(df), ~paste0(sort(class(.)),collapse=',')),
                        vartype=if(flag_include_vartype) {purrr::map_chr(as.list(df), ~class2vartype(.))} else {NA},
@@ -1487,8 +1503,13 @@ create_df_from_df_structure<-function(df, flag_add_nice_names=FALSE, default_df_
                        limit_to_labels=IsLimitedToLabels(df),
                        unit=GetUnits(df),
                        xls_formula=GetExcelFormula(as.list(df)), r_formula=GetRFormula(as.list(df)),
-                       labels_string=as.character(GetLabelsString(df)))
+                       labels_string=as.character(GetLabelsString(df, flag_all_labels = TRUE)))
   all_attributes<-getOption('df_used_attributes')
+
+  if(flag_include_fob) {
+    fobs<-purrr::map_int(df, GetFOB, flag_recalculate_uniques=TRUE, flag_update_dt=TRUE)
+    outdf[['f.o.b']]=GetFOB(var = )
+  }
 
   ans<-plyr::llply(df, function(v) {
     a<-attributes(v)
@@ -1526,22 +1547,23 @@ create_df_from_df_structure<-function(df, flag_add_nice_names=FALSE, default_df_
     outdf[[attrname]]<-vec
   }
 
+
   if(flag_add_nice_names) {
-  	setattr(outdf$colname, 'label', 'Internal variable name')
-  	setattr(outdf$label, 'label', 'Variable name')
-  	setattr(outdf$class, 'label', 'Data storage class')
+    data.table::setattr(outdf$colname, 'label', 'Internal variable name')
+    data.table::setattr(outdf$label, 'label', 'Variable name')
+    data.table::setattr(outdf$class, 'label', 'Data storage class')
   	if(flag_include_vartype) {
-  	  setattr(outdf$vartype, 'label', 'Type symbol')
+  	  data.table::setattr(outdf$vartype, 'label', 'Type symbol')
   	}
-  	setattr(outdf$theoretical_min_numeric, 'label', 'Theoretical min')
-  	setattr(outdf$theoretical_max_numeric, 'label', 'Theoretical max')
-  	setattr(outdf$force_integers, 'label', 'Force only integral values')
-  	setattr(outdf$required, 'label',  'Force only non-missing values')
-  	setattr(outdf$limit_to_labels, 'label', 'Force only values that are labelled')
-  	setattr(outdf$unit, 'label', 'Variable unit')
-  	setattr(outdf$xls_formula, 'label', 'Excel formula')
-  	setattr(outdf$r_formula, 'label', 'R formula')
-  	setattr(outdf$labels_string, 'label', 'Variable labels dictionary')
+    data.table::setattr(outdf$theoretical_min_numeric, 'label', 'Theoretical min')
+    data.table::setattr(outdf$theoretical_max_numeric, 'label', 'Theoretical max')
+    data.table::setattr(outdf$force_integers, 'label', 'Force only integral values')
+    data.table::setattr(outdf$required, 'label',  'Force only non-missing values')
+    data.table::setattr(outdf$limit_to_labels, 'label', 'Force only values that are labelled')
+    data.table::setattr(outdf$unit, 'label', 'Variable unit')
+    data.table::setattr(outdf$xls_formula, 'label', 'Excel formula')
+    data.table::setattr(outdf$r_formula, 'label', 'R formula')
+    data.table::setattr(outdf$labels_string, 'label', 'Variable labels dictionary')
     class_levels<-c('real number'='numeric',
 #                    'integer'='integer',
                     'text'='character',
@@ -1571,7 +1593,7 @@ create_df_from_df_structure<-function(df, flag_add_nice_names=FALSE, default_df_
     outdf <- dplyr::select(outdf, -vartype)
   }
 
-  setattr(outdf,'label', paste0('Structure of ', GetDBName(df, default_df_name)))
+  data.table::setattr(outdf,'label', paste0('Structure of ', GetDBName(df, default_df_name)))
   return(outdf)
 }
 
