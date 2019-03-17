@@ -12,7 +12,6 @@ readDataSheet<-function(file)
   na.colnames<-which(is.na(rng[2,2:(colcnt+1)]))
 
   collabels<-as.character(rng[1,2:(colcnt+1)])
-
   rng<-readSheet(path=address$file, sheet=address$sheetname, skip=2, colcnt=colcnt+2)
 
 
