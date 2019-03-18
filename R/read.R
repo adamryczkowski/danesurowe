@@ -476,7 +476,7 @@ set_apply_labels<-function(dt, labels, vartypes, flagUseTaggedNA=TRUE, in_varnam
           var2<-as.character(var)
         } else if (vartypes[[varnr]]=='D') {
           if(!'Date'%in%class(var)) {
-            var2<-as.Date(var)
+            var2<-tryCatch(as.Date(var), error=function(e)NaN)
           } else {
             var2<-var
           }

@@ -135,7 +135,7 @@ readSheet<-function(path, sheet, skip = 0, colcnt=NA, flag_remove_cols=TRUE)
 
   if(flag_remove_cols) {
 
-    new.colids<-paste0('..',seq(0,colcnt-1))
+    new.colids<-paste0('...',seq(0,colcnt-1))
     new.colids.idx<-new.colids[! (new.colids %in% colnames(rng))]
     delete.colids.idx<-colnames(rng)[!(colnames(rng) %in% new.colids )]
 

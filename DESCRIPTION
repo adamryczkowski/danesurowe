@@ -17,7 +17,8 @@ Imports:
 	  stringr,
 	  labelled,
 	  haven,
-	  Hmisc
+	  Hmisc,
+	  itemNaming
 Suggests:
     testthat
 Depends:
@@ -25,3 +26,4 @@ Depends:
     dplyr,
     data.table
 RoxygenNote: 5.0.1
+Remotes: adamryczkowski/itemNaming

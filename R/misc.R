@@ -224,11 +224,11 @@ format_values_as_one_string<-function(values, complementary_values=NULL, plural_
     if(is.null(extra_prop_name)) {
       extra_prop_name<-''
     }
-    formatted_values<-paste0(format_values(values), ' (',
+    formatted_values<-paste0(itemNaming::format_values(values), ' (',
                              c(extra_prop_name,rep('', length(extra_pop)-1)), extra_prop, ')')
 
   } else {
-    formatted_values<-format_values(values)
+    formatted_values<-itemNaming::format_values(values)
   }
 
   if(length(formatted_values)==1)
@@ -276,8 +276,11 @@ format_case_value_list<-function(case_names, values, flag_quote=FALSE)
   {
     case_names <- paste0("'", case_names, "'")
   }
-
-  value_names<-format_values(values)
+  # if('integer' %in% class(values)) {
+  #   debugonce(itemNaming:::format_values)
+  #   values<-as.integer(values)
+  # }
+  value_names<-itemNaming:::format_values(values)
 
   case_names <- paste0(case_names, ": ", values)
 
@@ -322,8 +325,8 @@ format_case_value_diff_list<-function(case_names, values1, values2, flag_quote=F
     case_names <- paste0("'", case_names, "'")
   }
 
-  value_names1<-format_values(values1)
-  value_names2<-format_values(values2)
+  value_names1<-itemNaming::format_values(values1)
+  value_names2<-itemNaming::format_values(values2)
 
   case_names <- paste0(case_names, ": ", value_names1, " -> ", value_names2)
 

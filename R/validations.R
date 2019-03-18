@@ -61,7 +61,6 @@ fn_validate_TheoreticalMin<-function(varnr, dt)
     if(sum(which_min)>0)
     {
       cases=row.names(dt)[which_min]
-      #browser()
       error <- paste0(
         'contains ',
         ifelse(length(cases)>1,
